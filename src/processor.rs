@@ -3,6 +3,8 @@ pub struct Cpu {
     memory: [u8; 4096],
     register: [u16; 16],
     program_counter: usize,
+    stack: [u16;16],
+    stack_pointer: u8,
 }
 
 impl Cpu {
@@ -11,6 +13,8 @@ impl Cpu {
             memory: [0; 4096],
             register: [0; 16],
             program_counter: 0x200,
+            stack: [0;16],
+            stack_pointer: 0,
         }
     }
 
@@ -39,11 +43,28 @@ impl Cpu {
 
             match (c, x, y, d) {
                 (0x0, _, _, _,) => self.execute_subroutine(nnn),
+                (0x0, 0x0, 0xE, 0x0) => self.screen_clear(),
+                (0x2, _, _, _)  => self.call_subroutine(nnn),
                 _ => todo!("TODO: {:0x}", opcode),
             }
 
             self.program_counter_increase();
         }
+    }
+
+    fn call_subroutine(&mut self, nnn: u16){
+        if self.stack_pointer as usize > self.stack.len(){
+            panic!("Stack overflow!")
+        }
+
+        self.stack[self.stack_pointer as usize] = self.program_counter as u16;
+        self.stack_pointer += 1;
+        self.execute_subroutine(nnn);
+
+    }
+
+    fn screen_clear(&mut self){
+        todo!("clear screen");
     }
 
     fn execute_subroutine(&mut self, nnn: u16){
@@ -54,6 +75,21 @@ impl Cpu {
 #[cfg(test)]
 mod test {
     use super::*;
+    #[test]
+    #[should_panic]
+    fn call_subroutine_test_panic_case() {
+        let mut cpu = Cpu::new();
+        cpu.stack_pointer = 16;
+        cpu.call_subroutine(0x300);
+    }
+    #[test]
+    fn call_subroutine_test() {
+        let mut cpu = Cpu::new();
+        cpu.call_subroutine(0x300);
+        assert_eq!(cpu.program_counter, 0x300);
+        assert_eq!(cpu.stack[0], 0x200);
+        assert_eq!(cpu.stack_pointer, 1);
+    }
     #[test]
     fn execute_subroutine_test() {
         let mut cpu = Cpu::new();
