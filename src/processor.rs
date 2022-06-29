@@ -38,17 +38,28 @@ impl Cpu {
             let kk = (opcode & 0x00FF) as u8;
 
             match (c, x, y, d) {
+                (0x0, _, _, _,) => self.execute_subroutine(nnn),
                 _ => todo!("TODO: {:0x}", opcode),
             }
 
             self.program_counter_increase();
         }
     }
+
+    fn execute_subroutine(&mut self, nnn: u16){
+        self.program_counter = nnn as usize;
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    #[test]
+    fn execute_subroutine_test() {
+        let mut cpu = Cpu::new();
+        cpu.execute_subroutine(0x300);
+        assert_eq!(cpu.program_counter, 0x300);
+    }
     #[test]
     fn next_opcode_test() {
         let mut cpu = Cpu::new();
