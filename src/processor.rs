@@ -46,12 +46,33 @@ impl Cpu {
                 (0x0, 0x0, 0xE, 0xE) => self.return_from_subroutine(),
                 (0x1, _, _, _,) => self.jump_to_subroutine(nnn),
                 (0x2, _, _, _)  => self.call_subroutine(nnn),
+                (0x3, _, _, _)  => self.skip_if_x(x, kk),
+                (0x4, _, _, _)  => self.skip_if_not_x(x, kk),
+                (0x5, _, _, 0x0) => self.skip_if_x_eq_y(x,y),
                 _ => todo!("TODO: {:0x}", opcode),
             }
 
             self.program_counter_increase();
         }
     }
+    fn skip_if_x_eq_y(&mut self, x: u8, y: u8){
+        if self.register[x as usize] == self.register[y as usize]{
+            self.program_counter_increase();
+        }
+    }
+
+    fn skip_if_not_x(&mut self, x: u8, kk: u8){
+        if self.register[x as usize] as u8 != kk{
+            self.program_counter_increase();
+        }
+    }
+
+    fn skip_if_x(&mut self, x: u8, kk: u8){
+        if self.register[x as usize] as u8 == kk{
+            self.program_counter_increase();
+        }
+    }
+
     fn return_from_subroutine(&mut self){
         if self.stack_pointer == 0 {
             panic!("Stack underflow!")
@@ -83,6 +104,53 @@ impl Cpu {
 #[cfg(test)]
 mod test {
     use super::*;
+    #[test]
+    fn skip_if_x_eq_y() {
+        let mut cpu = Cpu::new();
+        let x: u8= 5;
+        let y: u8 = 5;
+        cpu.register[x as usize] = x as u16;
+        cpu.register[y as usize] = y as u16;
+        cpu.skip_if_x_eq_y(x, y);
+        assert_eq!(cpu.program_counter, 0x202);
+
+        let mut cpu = Cpu::new();
+        let x: u8= 5;
+        let y: u8 = 6;
+        cpu.register[x as usize] = x as u16;
+        cpu.register[y as usize] = y as u16;
+        cpu.skip_if_x_eq_y(x, y);
+        assert_eq!(cpu.program_counter, 0x200);
+    }
+    #[test]
+    fn skip_if_not_x() {
+        let mut cpu = Cpu::new();
+        let x = 5;
+        cpu.register[x] = 5;
+        cpu.skip_if_not_x(x as u8, 5);
+        assert_eq!(cpu.program_counter, 0x200);
+        
+        let mut cpu = Cpu::new();
+        let x = 5;
+        cpu.register[x] = 5;
+        cpu.skip_if_not_x(x as u8, 6);
+        assert_eq!(cpu.program_counter, 0x202);
+    }
+    #[test]
+    fn skip_if_x_test() {
+        let mut cpu = Cpu::new();
+        let x = 5;
+        cpu.register[x] = 5;
+        cpu.skip_if_x(x as u8, 5);
+        assert_eq!(cpu.program_counter, 0x202);
+
+        let mut cpu = Cpu::new();
+        let x = 5;
+        cpu.register[x] = 5;
+        cpu.skip_if_x(x as u8, 6);
+        assert_eq!(cpu.program_counter, 0x200);
+    }
+
     #[test]
     fn call_and_return_subroutine_test() {
         let mut cpu = Cpu::new();
