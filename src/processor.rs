@@ -49,12 +49,35 @@ impl Cpu {
                 (0x3, _, _, _)  => self.skip_if_x(x, kk),
                 (0x4, _, _, _)  => self.skip_if_not_x(x, kk),
                 (0x5, _, _, 0x0) => self.skip_if_x_eq_y(x,y),
+                (0x6, _, _, _) => self.store_to_x(x, kk),
+                (0x7, _, _, _) => self.add_to_x(x, kk),
+                (0x8, _, _, 0x0) => self.store_y_to_x(x,y),
+                (0x8, _, _, 0x1) => self.set_x_xory(x,y),
                 _ => todo!("TODO: {:0x}", opcode),
             }
 
             self.program_counter_increase();
         }
     }
+    fn set_x_xory(&mut self, x: u8, y:u8) {
+        let vx = self.register[x as usize];
+        let vy = self.register[y as usize];
+
+        self.register[x as usize] = vx | vy;
+    }
+
+    fn store_y_to_x(&mut self, x: u8, y: u8){
+        self.register[x as usize] = self.register[y as usize];
+    }
+
+    fn add_to_x(&mut self, x: u8, kk: u8){
+        self.register[x as usize] += kk as u16;
+    }
+
+    fn store_to_x(&mut self, x: u8, kk: u8){
+        self.register[x as usize] = kk as u16;
+    }
+
     fn skip_if_x_eq_y(&mut self, x: u8, y: u8){
         if self.register[x as usize] == self.register[y as usize]{
             self.program_counter_increase();
@@ -104,6 +127,16 @@ impl Cpu {
 #[cfg(test)]
 mod test {
     use super::*;
+    #[test]
+    fn set_x_xory() {
+        let mut cpu = Cpu::new();
+        let x = 2;
+        let y = 5;
+        cpu.register[x as usize] = x;
+        cpu.register[y as usize] = y;
+        cpu.set_x_xory(x as u8, y as u8);
+        assert_eq!(cpu.register[x as usize], 0b111);
+    }
     #[test]
     fn skip_if_x_eq_y() {
         let mut cpu = Cpu::new();
