@@ -42,14 +42,22 @@ impl Cpu {
             let kk = (opcode & 0x00FF) as u8;
 
             match (c, x, y, d) {
-                (0x0, _, _, _,) => self.execute_subroutine(nnn),
                 (0x0, 0x0, 0xE, 0x0) => self.screen_clear(),
+                (0x0, 0x0, 0xE, 0xE) => self.return_from_subroutine(),
+                (0x0, _, _, _,) => self.execute_subroutine(nnn),
                 (0x2, _, _, _)  => self.call_subroutine(nnn),
                 _ => todo!("TODO: {:0x}", opcode),
             }
 
             self.program_counter_increase();
         }
+    }
+    fn return_from_subroutine(&mut self){
+        if self.stack_pointer == 0 {
+            panic!("Stack underflow!")
+        }
+        self.program_counter = self.stack[self.stack_pointer as usize] as usize;
+        self.stack_pointer -= 1;
     }
 
     fn call_subroutine(&mut self, nnn: u16){
@@ -75,6 +83,22 @@ impl Cpu {
 #[cfg(test)]
 mod test {
     use super::*;
+    #[test]
+    #[should_panic]
+    fn return_from_subroutine_test_panic() {
+        let mut cpu = Cpu::new();
+        cpu.return_from_subroutine();
+    }
+
+    #[test]
+    fn return_from_subroutine_test() {
+        let mut cpu = Cpu::new();
+        cpu.stack_pointer = 15;
+        cpu.stack[cpu.stack_pointer as usize] = 0x300;
+        cpu.return_from_subroutine();
+        assert_eq!(cpu.program_counter, 0x300);
+        assert_eq!(cpu.stack_pointer, 14);
+    }
     #[test]
     #[should_panic]
     fn call_subroutine_test_panic_case() {
