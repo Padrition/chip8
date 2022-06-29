@@ -44,7 +44,7 @@ impl Cpu {
             match (c, x, y, d) {
                 (0x0, 0x0, 0xE, 0x0) => self.screen_clear(),
                 (0x0, 0x0, 0xE, 0xE) => self.return_from_subroutine(),
-                (0x0, _, _, _,) => self.execute_subroutine(nnn),
+                (0x1, _, _, _,) => self.jump_to_subroutine(nnn),
                 (0x2, _, _, _)  => self.call_subroutine(nnn),
                 _ => todo!("TODO: {:0x}", opcode),
             }
@@ -56,8 +56,8 @@ impl Cpu {
         if self.stack_pointer == 0 {
             panic!("Stack underflow!")
         }
-        self.program_counter = self.stack[self.stack_pointer as usize] as usize;
         self.stack_pointer -= 1;
+        self.program_counter = self.stack[self.stack_pointer as usize] as usize;
     }
 
     fn call_subroutine(&mut self, nnn: u16){
@@ -67,7 +67,7 @@ impl Cpu {
 
         self.stack[self.stack_pointer as usize] = self.program_counter as u16;
         self.stack_pointer += 1;
-        self.execute_subroutine(nnn);
+        self.jump_to_subroutine(nnn);
 
     }
 
@@ -75,7 +75,7 @@ impl Cpu {
         todo!("clear screen");
     }
 
-    fn execute_subroutine(&mut self, nnn: u16){
+    fn jump_to_subroutine(&mut self, nnn: u16){
         self.program_counter = nnn as usize;
     }
 }
@@ -83,6 +83,18 @@ impl Cpu {
 #[cfg(test)]
 mod test {
     use super::*;
+    #[test]
+    fn call_and_return_subroutine_test() {
+        let mut cpu = Cpu::new();
+        cpu.call_subroutine(0x400);
+        assert_eq!(cpu.program_counter, 0x400);
+        assert_eq!(cpu.stack_pointer, 1);
+        assert_eq!(cpu.stack[0], 0x200);
+        cpu.return_from_subroutine();
+        assert_eq!(cpu.program_counter, 0x200);
+        assert_eq!(cpu.stack_pointer, 0);
+    }
+
     #[test]
     #[should_panic]
     fn return_from_subroutine_test_panic() {
@@ -94,7 +106,7 @@ mod test {
     fn return_from_subroutine_test() {
         let mut cpu = Cpu::new();
         cpu.stack_pointer = 15;
-        cpu.stack[cpu.stack_pointer as usize] = 0x300;
+        cpu.stack[14] = 0x300;
         cpu.return_from_subroutine();
         assert_eq!(cpu.program_counter, 0x300);
         assert_eq!(cpu.stack_pointer, 14);
@@ -115,9 +127,9 @@ mod test {
         assert_eq!(cpu.stack_pointer, 1);
     }
     #[test]
-    fn execute_subroutine_test() {
+    fn jump_to_subroutine_test() {
         let mut cpu = Cpu::new();
-        cpu.execute_subroutine(0x300);
+        cpu.jump_to_subroutine(0x300);
         assert_eq!(cpu.program_counter, 0x300);
     }
     #[test]
