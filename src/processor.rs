@@ -56,11 +56,24 @@ impl Cpu {
                 (0x8, _, _, 0x2) => self.set_x_xandy(x,y),
                 (0x8, _, _, 0x3) => self.set_x_xxory(x,y),
                 (0x8, _, _, 0x4) => self.add_y_to_x(x,y),
+                (0x8, _, _, 0x5) => self.sub_y_from_x(x,y),
                 _ => todo!("TODO: {:0x}", opcode),
             }
 
             self.program_counter_increase();
         }
+    }
+    fn sub_y_from_x(&mut self, x:u8, y: u8){
+        let vx = self.register[x as usize];
+        let vy = self.register[y as usize];
+
+        if vx > vy {
+            self.register[0xF] = 1;
+        }else{
+            self.register[0xF] = 0;
+        }
+
+        self.register[x as usize] = vx.wrapping_sub(vy);
     }
     fn add_y_to_x(&mut self, x: u8, y: u8){
         let vx = self.register[x as usize];
@@ -159,6 +172,22 @@ impl Cpu {
 #[cfg(test)]
 mod test {
     use super::*;
+    #[test]
+    fn sub_y_from_x_test() {
+        let mut cpu = Cpu::new();
+        cpu.register[0] = 7;
+        cpu.register[1] = 5;
+        cpu.sub_y_from_x(0, 1);
+        assert_eq!(cpu.register[0], 2);
+        assert_eq!(cpu.register[0xF], 1);
+
+        let mut cpu = Cpu::new();
+        cpu.register[0] = 4;
+        cpu.register[1] = 5;
+        cpu.sub_y_from_x(0, 1);
+        assert_eq!(cpu.register[0], 255);
+        assert_eq!(cpu.register[0xF], 0);
+    }
     #[test]
     fn add_y_to_x_test() {
         let mut cpu = Cpu::new();
