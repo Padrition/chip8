@@ -3,7 +3,7 @@ pub struct Cpu {
     memory: [u8; 4096],
     register: [u8; 16],
     program_counter: usize,
-    stack: [u16;16],
+    stack: [u16; 16],
     stack_pointer: u8,
 }
 
@@ -13,7 +13,7 @@ impl Cpu {
             memory: [0; 4096],
             register: [0; 16],
             program_counter: 0x200,
-            stack: [0;16],
+            stack: [0; 16],
             stack_pointer: 0,
         }
     }
@@ -44,104 +44,95 @@ impl Cpu {
             match (c, x, y, d) {
                 (0x0, 0x0, 0xE, 0x0) => self.screen_clear(),
                 (0x0, 0x0, 0xE, 0xE) => self.return_from_subroutine(),
-                (0x1, _, _, _,) => self.jump_to_subroutine(nnn),
-                (0x2, _, _, _)  => self.call_subroutine(nnn),
-                (0x3, _, _, _)  => self.skip_if_x(x, kk),
-                (0x4, _, _, _)  => self.skip_if_not_x(x, kk),
-                (0x5, _, _, 0x0) => self.skip_if_x_eq_y(x,y),
+                (0x1, _, _, _) => self.jump_to_subroutine(nnn),
+                (0x2, _, _, _) => self.call_subroutine(nnn),
+                (0x3, _, _, _) => self.skip_if_x(x, kk),
+                (0x4, _, _, _) => self.skip_if_not_x(x, kk),
+                (0x5, _, _, 0x0) => self.skip_if_x_eq_y(x, y),
                 (0x6, _, _, _) => self.store_to_x(x, kk),
                 (0x7, _, _, _) => self.add_to_x(x, kk),
-                (0x8, _, _, 0x0) => self.store_y_to_x(x,y),
-                (0x8, _, _, 0x1) => self.set_x_xory(x,y),
-                (0x8, _, _, 0x2) => self.set_x_xandy(x,y),
-                (0x8, _, _, 0x3) => self.set_x_xxory(x,y),
-                (0x8, _, _, 0x4) => self.add_y_to_x(x,y),
-                (0x8, _, _, 0x5) => self.sub_y_from_x(x,y),
+                (0x8, _, _, 0x0) => self.store_y_to_x(x, y),
+                (0x8, _, _, 0x1) => self.set_x_xory(x, y),
+                (0x8, _, _, 0x2) => self.set_x_xandy(x, y),
+                (0x8, _, _, 0x3) => self.set_x_xxory(x, y),
+                (0x8, _, _, 0x4) => self.add_y_to_x(x, y),
+                (0x8, _, _, 0x5) => self.sub_y_from_x(x, y),
                 _ => todo!("TODO: {:0x}", opcode),
             }
 
             self.program_counter_increase();
         }
     }
-    fn sub_y_from_x(&mut self, x:u8, y: u8){
+    fn sub_y_from_x(&mut self, x: u8, y: u8) {
         let vx = self.register[x as usize];
         let vy = self.register[y as usize];
 
-        if vx > vy {
-            self.register[0xF] = 1;
-        }else{
-            self.register[0xF] = 0;
-        }
+        self.register[0xF] = if vx > vy { 1 } else { 0 };
 
         self.register[x as usize] = vx.wrapping_sub(vy);
     }
-    fn add_y_to_x(&mut self, x: u8, y: u8){
+    fn add_y_to_x(&mut self, x: u8, y: u8) {
         let vx = self.register[x as usize];
         let vy = self.register[y as usize];
 
         let (vx, carry) = vx.overflowing_add(vy);
         self.register[x as usize] = vx;
 
-        if carry {
-            self.register[0xF] = 1;
-        }else{
-            self.register[0xF] =0;
-        }
-        
+        self.register[0xF] = if carry { 1 } else { 0 };
     }
 
-    fn set_x_xxory(&mut self, x:u8, y:u8){
+    fn set_x_xxory(&mut self, x: u8, y: u8) {
         let vx = self.register[x as usize];
         let vy = self.register[y as usize];
 
         self.register[x as usize] = vx ^ vy;
     }
 
-    fn set_x_xandy(&mut self, x: u8, y:u8) {
+    fn set_x_xandy(&mut self, x: u8, y: u8) {
         let vx = self.register[x as usize];
         let vy = self.register[y as usize];
 
         self.register[x as usize] = vx & vy;
     }
 
-    fn set_x_xory(&mut self, x: u8, y:u8) {
+    fn set_x_xory(&mut self, x: u8, y: u8) {
         let vx = self.register[x as usize];
         let vy = self.register[y as usize];
 
         self.register[x as usize] = vx | vy;
     }
 
-    fn store_y_to_x(&mut self, x: u8, y: u8){
+    fn store_y_to_x(&mut self, x: u8, y: u8) {
         self.register[x as usize] = self.register[y as usize];
     }
 
-    fn add_to_x(&mut self, x: u8, kk: u8){
+    fn add_to_x(&mut self, x: u8, kk: u8) {
         self.register[x as usize] += kk;
     }
 
-    fn store_to_x(&mut self, x: u8, kk: u8){
+    fn store_to_x(&mut self, x: u8, kk: u8) {
         self.register[x as usize] = kk;
     }
 
-    fn skip_if_x_eq_y(&mut self, x: u8, y: u8){
-        if self.register[x as usize] == self.register[y as usize]{
+    fn skip_if_x_eq_y(&mut self, x: u8, y: u8) {
+        if self.register[x as usize] == self.register[y as usize] {
             self.program_counter_increase();
         }
     }
 
-    fn skip_if_not_x(&mut self, x: u8, kk: u8){
-        if self.register[x as usize] as u8 != kk{
+    fn skip_if_not_x(&mut self, x: u8, kk: u8) {
+        if self.register[x as usize] as u8 != kk {
             self.program_counter_increase();
         }
     }
 
-    fn skip_if_x(&mut self, x: u8, kk: u8){
-        if self.register[x as usize] as u8 == kk{
+    fn skip_if_x(&mut self, x: u8, kk: u8) {
+        if self.register[x as usize] as u8 == kk {
             self.program_counter_increase();
         }
     }
 
-    fn return_from_subroutine(&mut self){
+    fn return_from_subroutine(&mut self) {
         if self.stack_pointer == 0 {
             panic!("Stack underflow!")
         }
@@ -149,22 +140,21 @@ impl Cpu {
         self.program_counter = self.stack[self.stack_pointer as usize] as usize;
     }
 
-    fn call_subroutine(&mut self, nnn: u16){
-        if self.stack_pointer as usize > self.stack.len(){
+    fn call_subroutine(&mut self, nnn: u16) {
+        if self.stack_pointer as usize > self.stack.len() {
             panic!("Stack overflow!")
         }
 
         self.stack[self.stack_pointer as usize] = self.program_counter as u16;
         self.stack_pointer += 1;
         self.jump_to_subroutine(nnn);
-
     }
 
-    fn screen_clear(&mut self){
+    fn screen_clear(&mut self) {
         todo!("clear screen");
     }
 
-    fn jump_to_subroutine(&mut self, nnn: u16){
+    fn jump_to_subroutine(&mut self, nnn: u16) {
         self.program_counter = nnn as usize;
     }
 }
@@ -203,7 +193,6 @@ mod test {
         cpu.add_y_to_x(0, 1);
         assert_eq!(cpu.register[0], 4);
         assert_eq!(cpu.register[0xF], 0);
-
     }
     #[test]
     fn set_x_xxory() {
@@ -238,7 +227,7 @@ mod test {
     #[test]
     fn skip_if_x_eq_y() {
         let mut cpu = Cpu::new();
-        let x: u8= 5;
+        let x: u8 = 5;
         let y: u8 = 5;
         cpu.register[x as usize] = x;
         cpu.register[y as usize] = y;
@@ -246,7 +235,7 @@ mod test {
         assert_eq!(cpu.program_counter, 0x202);
 
         let mut cpu = Cpu::new();
-        let x: u8= 5;
+        let x: u8 = 5;
         let y: u8 = 6;
         cpu.register[x as usize] = x;
         cpu.register[y as usize] = y;
@@ -260,7 +249,7 @@ mod test {
         cpu.register[x] = 5;
         cpu.skip_if_not_x(x as u8, 5);
         assert_eq!(cpu.program_counter, 0x200);
-        
+
         let mut cpu = Cpu::new();
         let x = 5;
         cpu.register[x] = 5;
