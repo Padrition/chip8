@@ -1,7 +1,7 @@
 #[derive(Debug)]
 pub struct Cpu {
     memory: [u8; 4096],
-    register: [u16; 16],
+    register: [u8; 16],
     program_counter: usize,
     stack: [u16;16],
     stack_pointer: u8,
@@ -68,11 +68,13 @@ impl Cpu {
 
         let (vx, carry) = vx.overflowing_add(vy);
         self.register[x as usize] = vx;
+
         if carry {
             self.register[0xF] = 1;
         }else{
-            self.register[0xF] = 0;
-        } 
+            self.register[0xF] =0;
+        }
+        
     }
 
     fn set_x_xxory(&mut self, x:u8, y:u8){
@@ -101,11 +103,11 @@ impl Cpu {
     }
 
     fn add_to_x(&mut self, x: u8, kk: u8){
-        self.register[x as usize] += kk as u16;
+        self.register[x as usize] += kk;
     }
 
     fn store_to_x(&mut self, x: u8, kk: u8){
-        self.register[x as usize] = kk as u16;
+        self.register[x as usize] = kk;
     }
 
     fn skip_if_x_eq_y(&mut self, x: u8, y: u8){
@@ -160,7 +162,7 @@ mod test {
     #[test]
     fn add_y_to_x_test() {
         let mut cpu = Cpu::new();
-        cpu.register[0] = u16::MAX;
+        cpu.register[0] = u8::MAX;
         cpu.register[1] = 2;
         cpu.add_y_to_x(0, 1);
         assert_eq!(cpu.register[0], 1);
@@ -209,16 +211,16 @@ mod test {
         let mut cpu = Cpu::new();
         let x: u8= 5;
         let y: u8 = 5;
-        cpu.register[x as usize] = x as u16;
-        cpu.register[y as usize] = y as u16;
+        cpu.register[x as usize] = x;
+        cpu.register[y as usize] = y;
         cpu.skip_if_x_eq_y(x, y);
         assert_eq!(cpu.program_counter, 0x202);
 
         let mut cpu = Cpu::new();
         let x: u8= 5;
         let y: u8 = 6;
-        cpu.register[x as usize] = x as u16;
-        cpu.register[y as usize] = y as u16;
+        cpu.register[x as usize] = x;
+        cpu.register[y as usize] = y;
         cpu.skip_if_x_eq_y(x, y);
         assert_eq!(cpu.program_counter, 0x200);
     }
