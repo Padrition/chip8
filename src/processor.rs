@@ -57,11 +57,16 @@ impl Cpu {
                 (0x8, _, _, 0x3) => self.set_x_xxory(x, y),
                 (0x8, _, _, 0x4) => self.add_y_to_x(x, y),
                 (0x8, _, _, 0x5) => self.sub_y_from_x(x, y),
+                (0x8, _, _, 0x6) => self.right_shift_x(x),
                 _ => todo!("TODO: {:0x}", opcode),
             }
 
             self.program_counter_increase();
         }
+    }
+    fn right_shift_x(&mut self, x: u8) {
+        self.register[0xF] = self.register[x as usize] & 0b0000_0001;
+        self.register[x as usize] >>= 1;
     }
     fn sub_y_from_x(&mut self, x: u8, y: u8) {
         let vx = self.register[x as usize];
@@ -162,6 +167,20 @@ impl Cpu {
 #[cfg(test)]
 mod test {
     use super::*;
+    #[test]
+    fn right_shift_x_test() {
+        let mut cpu = Cpu::new();
+        cpu.register[0] = 5;
+        cpu.right_shift_x(0);
+        assert_eq!(cpu.register[0], 2);
+        assert_eq!(cpu.register[0xF], 1);
+
+        let mut cpu = Cpu::new();
+        cpu.register[0] = 4;
+        cpu.right_shift_x(0);
+        assert_eq!(cpu.register[0], 2);
+        assert_eq!(cpu.register[0xF], 0);
+    }
     #[test]
     fn sub_y_from_x_test() {
         let mut cpu = Cpu::new();
