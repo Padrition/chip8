@@ -5,6 +5,7 @@ pub struct Cpu {
     program_counter: usize,
     stack: [u16; 16],
     stack_pointer: u8,
+    i: u16,
 }
 
 impl Cpu {
@@ -15,6 +16,7 @@ impl Cpu {
             program_counter: 0x200,
             stack: [0; 16],
             stack_pointer: 0,
+            i: 0,
         }
     }
 
@@ -61,11 +63,20 @@ impl Cpu {
                 (0x8, _, _, 0x7) => self.sub_x_from_y(x,y),
                 (0x8, _, _, 0xE) => self.left_shift_x(x),
                 (0x9, _, _, 0x0) => self.comparte_x_y(x,y),
+                (0xA, _, _, _) => self.store_addres(nnn),
+                (0xB, _, _, _) => self.jump_to_addr_and_v0(nnn),
                 _ => todo!("TODO: {:0x}", opcode),
             }
 
             self.program_counter_increase();
         }
+    }
+    fn jump_to_addr_and_v0(&mut self, nnn: u16){
+        let v0 = self.register[0] as u16;
+        self.jump_to_subroutine(nnn + v0);
+    }
+    fn store_addres(&mut self, nnn: u16){
+        self.i = nnn;
     }
     fn comparte_x_y(&mut self, x: u8, y: u8){
         let vx = self.register[x as usize];
