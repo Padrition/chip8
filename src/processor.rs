@@ -53,12 +53,42 @@ impl Cpu {
                 (0x7, _, _, _) => self.add_to_x(x, kk),
                 (0x8, _, _, 0x0) => self.store_y_to_x(x,y),
                 (0x8, _, _, 0x1) => self.set_x_xory(x,y),
+                (0x8, _, _, 0x2) => self.set_x_xandy(x,y),
+                (0x8, _, _, 0x3) => self.set_x_xxory(x,y),
+                (0x8, _, _, 0x4) => self.add_y_to_x(x,y),
                 _ => todo!("TODO: {:0x}", opcode),
             }
 
             self.program_counter_increase();
         }
     }
+    fn add_y_to_x(&mut self, x: u8, y: u8){
+        let vx = self.register[x as usize];
+        let vy = self.register[y as usize];
+
+        let (vx, carry) = vx.overflowing_add(vy);
+        self.register[x as usize] = vx;
+        if carry {
+            self.register[0xF] = 1;
+        }else{
+            self.register[0xF] = 0;
+        } 
+    }
+
+    fn set_x_xxory(&mut self, x:u8, y:u8){
+        let vx = self.register[x as usize];
+        let vy = self.register[y as usize];
+
+        self.register[x as usize] = vx ^ vy;
+    }
+
+    fn set_x_xandy(&mut self, x: u8, y:u8) {
+        let vx = self.register[x as usize];
+        let vy = self.register[y as usize];
+
+        self.register[x as usize] = vx & vy;
+    }
+
     fn set_x_xory(&mut self, x: u8, y:u8) {
         let vx = self.register[x as usize];
         let vy = self.register[y as usize];
@@ -127,6 +157,43 @@ impl Cpu {
 #[cfg(test)]
 mod test {
     use super::*;
+    #[test]
+    fn add_y_to_x_test() {
+        let mut cpu = Cpu::new();
+        cpu.register[0] = u16::MAX;
+        cpu.register[1] = 2;
+        cpu.add_y_to_x(0, 1);
+        assert_eq!(cpu.register[0], 1);
+        assert_eq!(cpu.register[0xF], 1);
+
+        let mut cpu = Cpu::new();
+        cpu.register[0] = 2;
+        cpu.register[1] = 2;
+        cpu.add_y_to_x(0, 1);
+        assert_eq!(cpu.register[0], 4);
+        assert_eq!(cpu.register[0xF], 0);
+
+    }
+    #[test]
+    fn set_x_xxory() {
+        let mut cpu = Cpu::new();
+        let x = 3;
+        let y = 7;
+        cpu.register[x as usize] = x;
+        cpu.register[y as usize] = y;
+        cpu.set_x_xxory(x as u8, y as u8);
+        assert_eq!(cpu.register[x as usize], 0b100);
+    }
+    #[test]
+    fn set_x_xandy() {
+        let mut cpu = Cpu::new();
+        let x = 3;
+        let y = 5;
+        cpu.register[x as usize] = x;
+        cpu.register[y as usize] = y;
+        cpu.set_x_xandy(x as u8, y as u8);
+        assert_eq!(cpu.register[x as usize], 0b001);
+    }
     #[test]
     fn set_x_xory() {
         let mut cpu = Cpu::new();
