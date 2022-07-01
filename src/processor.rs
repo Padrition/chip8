@@ -58,11 +58,34 @@ impl Cpu {
                 (0x8, _, _, 0x4) => self.add_y_to_x(x, y),
                 (0x8, _, _, 0x5) => self.sub_y_from_x(x, y),
                 (0x8, _, _, 0x6) => self.right_shift_x(x),
+                (0x8, _, _, 0x7) => self.sub_x_from_y(x,y),
+                (0x8, _, _, 0xE) => self.left_shift_x(x),
+                (0x9, _, _, 0x0) => self.comparte_x_y(x,y),
                 _ => todo!("TODO: {:0x}", opcode),
             }
 
             self.program_counter_increase();
         }
+    }
+    fn comparte_x_y(&mut self, x: u8, y: u8){
+        let vx = self.register[x as usize];
+        let vy = self.register[y as usize];
+
+        if vx != vy{
+            self.program_counter_increase();
+        }
+    }
+    fn left_shift_x(&mut self, x: u8){
+        self.register[0xF] = self.register[x as usize] & 0b0000_0001;
+        self.register[x as usize] <<= 1; 
+    }
+    fn sub_x_from_y(&mut self, x: u8, y: u8){
+        let vx = self.register[x as usize];
+        let vy = self.register[y as usize];
+
+        self.register[0xF] = if vy > vx { 1 } else { 0 };
+
+        self.register[x as usize] = vy.wrapping_sub(vx);
     }
     fn right_shift_x(&mut self, x: u8) {
         self.register[0xF] = self.register[x as usize] & 0b0000_0001;
@@ -167,6 +190,30 @@ impl Cpu {
 #[cfg(test)]
 mod test {
     use super::*;
+    #[test]
+    fn left_shift_x_test() {
+        let mut cpu = Cpu::new();
+        cpu.register[0] = 5;
+        cpu.left_shift_x(0);
+        assert_eq!(cpu.register[0xF], 1);
+        assert_eq!(cpu.register[0], 10);
+    }
+    #[test]
+    fn sub_x_from_y_test() {
+        let mut cpu = Cpu::new();
+        cpu.register[0] = 5;
+        cpu.register[1] = 7;
+        cpu.sub_x_from_y(0, 1);
+        assert_eq!(cpu.register[0], 2);
+        assert_eq!(cpu.register[0xF], 1);
+
+        let mut cpu = Cpu::new();
+        cpu.register[0] = 5;
+        cpu.register[1] = 4;
+        cpu.sub_x_from_y(0, 1);
+        assert_eq!(cpu.register[0], 255);
+        assert_eq!(cpu.register[0xF], 0);
+    }
     #[test]
     fn right_shift_x_test() {
         let mut cpu = Cpu::new();
