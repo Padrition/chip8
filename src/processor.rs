@@ -112,12 +112,12 @@ impl Cpu {
         }
     }
     fn read_memory_to_registers(&mut self, x: u8) {
-        for j in (0..x) {
+        for j in 0..x {
             self.register[j as usize] = self.memory[(self.i + j as u16) as usize];
         }
     }
     fn store_registers_to_memory(&mut self, x: u8) {
-        for i in (0..x) {
+        for i in 0..x {
             self.memory[(self.i + i as u16) as usize] = self.register[i as usize];
         }
     }
@@ -137,7 +137,7 @@ impl Cpu {
         self.i = vx as u16 * sprite_length;
     }
     fn add_x_to_i(&mut self, x: u8) {
-        self.i = self.i + x as u16;
+        self.i += x as u16;
     }
     fn set_soundt(&mut self, x: u8) {
         let vx = self.register[x as usize];
@@ -165,7 +165,7 @@ impl Cpu {
     fn store_rand_to_x(&mut self, x: u8, kk: u8) {
         let mut rng = rand::thread_rng();
         let mut rand_num: u8 = rng.gen_range(0..255);
-        rand_num = rand_num & kk;
+        rand_num &= kk;
         self.register[x as usize] = rand_num;
     }
     fn jump_to_addr_and_v0(&mut self, nnn: u16) {
@@ -302,11 +302,11 @@ mod test {
     fn read_memory_to_registers_test() {
         let mut cpu = Cpu::new();
         cpu.i = 0x300;
-        for j in (0..cpu.register.len()) {
+        for j in 0..cpu.register.len() {
             cpu.memory[0x300 + j] = j as u8;
         }
         cpu.read_memory_to_registers(16);
-        for j in (0..cpu.register.len()) {
+        for j in 0..cpu.register.len() {
             assert_eq!(cpu.register[j], j as u8);
         }
     }
@@ -314,11 +314,11 @@ mod test {
     fn store_registers_to_memory_test() {
         let mut cpu = Cpu::new();
         cpu.i = 0x300;
-        for j in (0..cpu.register.len()) {
+        for j in 0..cpu.register.len() {
             cpu.register[j] = j as u8;
         }
         cpu.store_registers_to_memory(16);
-        for j in (0..cpu.register.len()) {
+        for j in 0..cpu.register.len() {
             assert_eq!(cpu.register[j], cpu.memory[0x300 + j]);
         }
     }
@@ -342,7 +342,7 @@ mod test {
     #[test]
     fn store_rand_to_x_test() {
         let mut cpu = Cpu::new();
-        for i in (0..255) {
+        for i in 0..255 {
             cpu.store_rand_to_x(0, i);
             let range = 0..255;
             assert!(range.contains(&cpu.register[0]));
