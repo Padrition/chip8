@@ -1,5 +1,24 @@
 use rand::Rng;
 
+const CHIP8_FONT: [u8;80] = [
+    0xF0, 0x90, 0x90, 0x90, 0xF0,		// 0
+	0x20, 0x60, 0x20, 0x20, 0x70,		// 1
+	0xF0, 0x10, 0xF0, 0x80, 0xF0,		// 2
+	0xF0, 0x10, 0xF0, 0x10, 0xF0,		// 3
+	0x90, 0x90, 0xF0, 0x10, 0x10,		// 4
+	0xF0, 0x80, 0xF0, 0x10, 0xF0,		// 5
+	0xF0, 0x80, 0xF0, 0x90, 0xF0,		// 6
+	0xF0, 0x10, 0x20, 0x40, 0x40,		// 7
+	0xF0, 0x90, 0xF0, 0x90, 0xF0,		// 8
+	0xF0, 0x90, 0xF0, 0x10, 0xF0,		// 9
+	0xF0, 0x90, 0xF0, 0x90, 0x90,		// A
+	0xE0, 0x90, 0xE0, 0x90, 0xE0,		// B
+	0xF0, 0x80, 0x80, 0x80, 0xF0,		// C
+	0xE0, 0x90, 0x90, 0x90, 0xE0,		// D
+	0xF0, 0x80, 0xF0, 0x80, 0xF0,		// E
+	0xF0, 0x80, 0xF0, 0x80, 0x80		// F
+];
+
 #[derive(Debug)]
 pub struct Cpu {
     memory: [u8; 4096],
@@ -8,17 +27,23 @@ pub struct Cpu {
     stack: [u16; 16],
     stack_pointer: u8,
     i: u16,
+    delay_timer: u8,
+    sound_timer: u8,
 }
 
 impl Cpu {
     pub fn new() -> Cpu {
+        let mut ram = [0; 4096];
+        ram[..CHIP8_FONT.len()].clone_from_slice(&CHIP8_FONT);
         Cpu {
-            memory: [0; 4096],
+            memory: ram,
             register: [0; 16],
             program_counter: 0x200,
             stack: [0; 16],
             stack_pointer: 0,
             i: 0,
+            delay_timer: 0,
+            sound_timer: 0,
         }
     }
 
@@ -68,11 +93,45 @@ impl Cpu {
                 (0xA, _, _, _) => self.store_addres(nnn),
                 (0xB, _, _, _) => self.jump_to_addr_and_v0(nnn),
                 (0xC, _, _, _) => self.store_rand_to_x(x, kk),
+                (0xD, _, _, _) => self.draw_a_sprite(x,y,d),
+                (0xE, _, 0x9, 0xE) => self.skip_if_pressed(x),
+                (0xE, _, 0xA, 0x1) => self.skip_if_not_pressed(x),
+                (0xF, _, 0x0, 0x7) => self.store_delayt_to_x(x),
+                (0xF, _, 0x0, 0xA) => self.wait_for_press(x),
+                (0xF, _, 0x1, 0x5) => self.set_delayt(x),
+                (0xF, _, 0x1, 0x8) => self.set_soundt(x),
+                (0xF, _, 0x1, 0xE) => self.add_x_to_i(x),
                 _ => todo!("TODO: {:0x}", opcode),
             }
 
             self.program_counter_increase();
         }
+    }
+    fn add_x_to_i(&mut self, x: u8){
+        self.i = self.i + x as u16;
+    }
+    fn set_soundt(&mut self, x: u8){
+        let vx = self.register[x as usize];
+        self.sound_timer = vx;
+    }
+    fn set_delayt(&mut self, x: u8){
+        let vx = self.register[x as usize];
+        self.delay_timer = vx;
+    }
+    fn wait_for_press(&mut self, x: u8){
+        todo!("Wait for press");
+    }
+    fn store_delayt_to_x(&mut self, x: u8){
+        self.register[x as usize] = self.delay_timer;
+    }
+    fn skip_if_not_pressed(&mut self, x: u8){
+        todo!("SKIP not");
+    }
+    fn skip_if_pressed(&mut self, x: u8){
+        todo!("SKIP");
+    }
+    fn draw_a_sprite(&mut self, x: u8, y: u8, n: u8){
+        todo!("DRAW!");
     }
     fn store_rand_to_x(&mut self, x: u8, kk: u8){
         let mut rng = rand::thread_rng();
