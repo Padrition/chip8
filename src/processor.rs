@@ -102,11 +102,22 @@ impl Cpu {
                 (0xF, _, 0x1, 0x8) => self.set_soundt(x),
                 (0xF, _, 0x1, 0xE) => self.add_x_to_i(x),
                 (0xF, _, 0x2, 0x9) => self.set_i_to_sprite_addr(x),
+                (0xF, _, 0x3, 0x3) => self.bcd_from_x_to_i(x),
                 _ => todo!("TODO: {:0x}", opcode),
             }
 
             self.program_counter_increase();
         }
+    }
+    fn bcd_from_x_to_i(&mut self, x: u8){
+        let decimal = self.register[x as usize];
+        let i1 = decimal / 100; //maybe there is a better way of converting to bcd, but I came up with this my self. Idk if I shloud be proud or ashamed.
+        let i2 = (decimal - i1 *100) / 10;
+        let i3 = (decimal - i1 *100) - i2 * 10;
+
+        self.memory[self.i as usize] = i1;
+        self.memory[(self.i + 1) as usize] = i2;
+        self.memory[(self.i + 2) as usize] = i3;
     }
     fn set_i_to_sprite_addr(&mut self, x: u8){
         let vx = self.register[x as usize];
@@ -275,6 +286,16 @@ impl Cpu {
 #[cfg(test)]
 mod test {
     use super::*;
+    #[test]
+    fn bcd_from_x_to_i_test() {
+        let mut cpu = Cpu::new();
+        cpu.i = 0x300;
+        cpu.register[0] = 159;
+        cpu.bcd_from_x_to_i(0);
+        assert_eq!(cpu.memory[0x300], 1);
+        assert_eq!(cpu.memory[0x301], 5);
+        assert_eq!(cpu.memory[0x302], 9);
+    }
     #[test]
     fn set_i_to_sprite_addr_test() {
         let mut cpu = Cpu::new();
