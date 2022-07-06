@@ -101,11 +101,17 @@ impl Cpu {
                 (0xF, _, 0x1, 0x5) => self.set_delayt(x),
                 (0xF, _, 0x1, 0x8) => self.set_soundt(x),
                 (0xF, _, 0x1, 0xE) => self.add_x_to_i(x),
+                (0xF, _, 0x2, 0x9) => self.set_i_to_sprite_addr(x),
                 _ => todo!("TODO: {:0x}", opcode),
             }
 
             self.program_counter_increase();
         }
+    }
+    fn set_i_to_sprite_addr(&mut self, x: u8){
+        let vx = self.register[x as usize];
+        let sprite_length = 5;
+        self.i = vx as u16 * sprite_length;
     }
     fn add_x_to_i(&mut self, x: u8){
         self.i = self.i + x as u16;
@@ -269,6 +275,13 @@ impl Cpu {
 #[cfg(test)]
 mod test {
     use super::*;
+    #[test]
+    fn set_i_to_sprite_addr_test() {
+        let mut cpu = Cpu::new();
+        cpu.register[0] = 0xD;
+        cpu.set_i_to_sprite_addr(0);
+        assert_eq!(cpu.i, 65);
+    }
     #[test]
     fn store_rand_to_x_test() {
         let mut cpu = Cpu::new();
