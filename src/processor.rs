@@ -103,10 +103,16 @@ impl Cpu {
                 (0xF, _, 0x1, 0xE) => self.add_x_to_i(x),
                 (0xF, _, 0x2, 0x9) => self.set_i_to_sprite_addr(x),
                 (0xF, _, 0x3, 0x3) => self.bcd_from_x_to_i(x),
+                (0xF, _, 0x5, 0x5) => self.store_registers_to_memory(x),
                 _ => todo!("TODO: {:0x}", opcode),
             }
 
             self.program_counter_increase();
+        }
+    }
+    fn store_registers_to_memory(&mut self, x: u8){
+        for i in (0..x){
+            self.memory[(self.i + i as u16) as usize] = self.register[i as usize];
         }
     }
     fn bcd_from_x_to_i(&mut self, x: u8){
@@ -286,6 +292,18 @@ impl Cpu {
 #[cfg(test)]
 mod test {
     use super::*;
+    #[test]
+    fn store_registers_to_memory_test() {
+        let mut cpu = Cpu::new();
+        cpu.i = 0x300;
+        for j in (0..cpu.register.len()){
+            cpu.register[j] = j as u8;
+        }
+        cpu.store_registers_to_memory(16);
+        for j in (0..cpu.register.len()){
+            assert_eq!(cpu.register[j], cpu.memory[0x300 + j]);
+        }
+    }
     #[test]
     fn bcd_from_x_to_i_test() {
         let mut cpu = Cpu::new();
