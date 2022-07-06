@@ -1,3 +1,5 @@
+use rand::Rng;
+
 #[derive(Debug)]
 pub struct Cpu {
     memory: [u8; 4096],
@@ -65,11 +67,18 @@ impl Cpu {
                 (0x9, _, _, 0x0) => self.comparte_x_y(x,y),
                 (0xA, _, _, _) => self.store_addres(nnn),
                 (0xB, _, _, _) => self.jump_to_addr_and_v0(nnn),
+                (0xC, _, _, _) => self.store_rand_to_x(x, kk),
                 _ => todo!("TODO: {:0x}", opcode),
             }
 
             self.program_counter_increase();
         }
+    }
+    fn store_rand_to_x(&mut self, x: u8, kk: u8){
+        let mut rng = rand::thread_rng();
+        let mut rand_num: u8 = rng.gen_range(0..255);
+        rand_num = rand_num & kk;
+        self.register[x as usize] = rand_num;
     }
     fn jump_to_addr_and_v0(&mut self, nnn: u16){
         let v0 = self.register[0] as u16;
@@ -201,6 +210,15 @@ impl Cpu {
 #[cfg(test)]
 mod test {
     use super::*;
+    #[test]
+    fn store_rand_to_x_test() {
+        let mut cpu = Cpu::new();
+        for i in (0..255){
+            cpu.store_rand_to_x(0, i);
+            let range = 0..255;
+            assert!(range.contains(&cpu.register[0]));
+        }
+    }
     #[test]
     fn left_shift_x_test() {
         let mut cpu = Cpu::new();
