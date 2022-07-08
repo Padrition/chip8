@@ -1,5 +1,10 @@
 use rand::Rng;
 
+use super::HEIGHT;
+use super::PROGRAM_START;
+use super::RAM;
+use super::WIDTH;
+
 const CHIP8_FONT: [u8; 80] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -21,7 +26,7 @@ const CHIP8_FONT: [u8; 80] = [
 
 #[derive(Debug)]
 pub struct Cpu {
-    memory: [u8; 4096],
+    memory: [u8; RAM],
     register: [u8; 16],
     program_counter: usize,
     stack: [u16; 16],
@@ -29,21 +34,23 @@ pub struct Cpu {
     i: u16,
     delay_timer: u8,
     sound_timer: u8,
+    pixels: [[u8; WIDTH]; HEIGHT],
 }
 
 impl Cpu {
     pub fn new() -> Cpu {
-        let mut ram = [0; 4096];
+        let mut ram = [0; RAM];
         ram[..CHIP8_FONT.len()].clone_from_slice(&CHIP8_FONT);
         Cpu {
             memory: ram,
             register: [0; 16],
-            program_counter: 0x200,
+            program_counter: PROGRAM_START,
             stack: [0; 16],
             stack_pointer: 0,
             i: 0,
             delay_timer: 0,
             sound_timer: 0,
+            pixels: [[0; WIDTH]; HEIGHT],
         }
     }
 
@@ -160,7 +167,23 @@ impl Cpu {
         todo!("SKIP");
     }
     fn draw_a_sprite(&mut self, x: u8, y: u8, n: u8) {
-        todo!("DRAW!");
+        for sprite_step in 0..n {
+            let y = (self.register[y as usize] + sprite_step) % HEIGHT as u8;
+            for bit in 0..8 {
+                let sprite_bit =
+                    (self.memory[(self.i + sprite_step as u16) as usize] >> (7 - bit)) & 1;
+                let x = (self.register[x as usize] + bit) % WIDTH as u8;
+                let old_pixel = self.pixels[y as usize][x as usize];
+                self.pixels[y as usize][x as usize] ^= sprite_bit;
+                if old_pixel == 1 {
+                    self.register[0xF] = if old_pixel == self.pixels[y as usize][x as usize] {
+                        0
+                    } else {
+                        1
+                    };
+                }
+            }
+        }
     }
     fn store_rand_to_x(&mut self, x: u8, kk: u8) {
         let mut rng = rand::thread_rng();
@@ -296,5 +319,5 @@ impl Cpu {
 }
 
 #[cfg(test)]
-#[path="./processor_test.rs"]
+#[path = "./processor_test.rs"]
 mod test;
