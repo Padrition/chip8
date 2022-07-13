@@ -5,6 +5,8 @@ use super::PROGRAM_START;
 use super::RAM;
 use super::WIDTH;
 
+const TIMER_RATE: u64 = 1667; //60Hz - the speed at wich timers count down
+
 const CHIP8_FONT: [u8; 80] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -35,6 +37,7 @@ pub struct Cpu {
     delay_timer: u8,
     sound_timer: u8,
     pixels: [[u8; WIDTH]; HEIGHT],
+    keypad: [bool; 16],
 }
 
 impl Cpu {
@@ -51,7 +54,27 @@ impl Cpu {
             delay_timer: 0,
             sound_timer: 0,
             pixels: [[0; WIDTH]; HEIGHT],
+            keypad: [false;16],
         }
+    }
+
+    fn what_key_is_pressed(&self) -> Option<u8>{
+        for (key, pressed) in self.keypad.iter().enumerate(){
+            if *pressed{
+                return Some(key as u8);
+            }
+        }
+        None
+    }
+
+    pub fn load_key_map(&mut self, key_map: &[bool;16]){
+        for (key, state) in key_map.iter().enumerate(){
+            self.keypad[key] = *state;
+        }
+    }
+
+    fn program_counter_decrease(&mut self){
+        self.program_counter -= 2;
     }
 
     fn program_counter_increase(&mut self) {
@@ -66,6 +89,7 @@ impl Cpu {
     }
 
     pub fn run(&mut self) {
+        let mut last_tick = std::time::Instant::now();
         loop {
             let opcode = self.next_opcode();
 
@@ -116,6 +140,13 @@ impl Cpu {
             }
 
             self.program_counter_increase();
+
+            if last_tick.elapsed() >= std::time::Duration::from_millis(TIMER_RATE){
+                if self.delay_timer > 0 { self.delay_timer -= 1};
+                if self.sound_timer > 0 { self.sound_timer -= 1};
+
+                last_tick = std::time::Instant::now();
+            }
         }
     }
     fn read_memory_to_registers(&mut self, x: u8) {
@@ -154,17 +185,29 @@ impl Cpu {
         let vx = self.register[x as usize];
         self.delay_timer = vx;
     }
+    // FX0A:
+    // if there is a pressed key, write it's value to the register VX
+    // Otherwise decrease program_counter to wait for a key press
     fn wait_for_press(&mut self, x: u8) {
-        todo!("Wait for press");
+        match self.what_key_is_pressed(){
+            Some(key) => self.register[x as usize] = key,
+            None => self.program_counter_decrease(),
+        }
     }
     fn store_delayt_to_x(&mut self, x: u8) {
         self.register[x as usize] = self.delay_timer;
     }
     fn skip_if_not_pressed(&mut self, x: u8) {
-        todo!("SKIP not");
+        let key_wanted = self.register[x as usize] as usize;
+        if !self.keypad[key_wanted]{
+            self.program_counter_increase();
+        }
     }
     fn skip_if_pressed(&mut self, x: u8) {
-        todo!("SKIP");
+        let key_wanted = self.register[x as usize] as usize;
+        if self.keypad[key_wanted]{
+            self.program_counter_increase();
+        }
     }
     fn draw_a_sprite(&mut self, x: u8, y: u8, n: u8) {
         for sprite_step in 0..n {
@@ -310,7 +353,7 @@ impl Cpu {
     }
 
     fn screen_clear(&mut self) {
-        todo!("clear screen");
+        self.pixels = [[0;WIDTH];HEIGHT];
     }
 
     fn jump_to_subroutine(&mut self, nnn: u16) {
