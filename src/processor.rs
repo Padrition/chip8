@@ -38,6 +38,7 @@ pub struct Cpu {
     sound_timer: u8,
     pixels: [[u8; WIDTH]; HEIGHT],
     keypad: [bool; 16],
+    last_tick: std::time::Instant,
 }
 
 impl Cpu {
@@ -55,7 +56,12 @@ impl Cpu {
             sound_timer: 0,
             pixels: [[0; WIDTH]; HEIGHT],
             keypad: [false;16],
+            last_tick: std::time::Instant::now(),
         }
+    }
+
+    pub fn read_pixels(&self) -> [[u8;WIDTH]; HEIGHT]{
+        self.pixels
     }
 
     fn what_key_is_pressed(&self) -> Option<u8>{
@@ -88,65 +94,62 @@ impl Cpu {
         ((op1 as u16) << 8) | op2 as u16
     }
 
-    pub fn run(&mut self) {
-        let mut last_tick = std::time::Instant::now();
-        loop {
-            let opcode = self.next_opcode();
+    pub fn run_next_instruction(&mut self) {
+        let opcode = self.next_opcode();
 
-            let c = ((opcode & 0xF000) >> 12) as u8;
-            let x = ((opcode & 0x0F00) >> 8) as u8;
-            let y = ((opcode & 0x00F0) >> 4) as u8;
-            let d = (opcode & 0x000F) as u8;
+        let c = ((opcode & 0xF000) >> 12) as u8;
+        let x = ((opcode & 0x0F00) >> 8) as u8;
+        let y = ((opcode & 0x00F0) >> 4) as u8;
+        let d = (opcode & 0x000F) as u8;
 
-            let nnn = opcode & 0x0FFF;
-            let kk = (opcode & 0x00FF) as u8;
+        let nnn = opcode & 0x0FFF;
+        let kk = (opcode & 0x00FF) as u8;
 
-            match (c, x, y, d) {
-                (0x0, 0x0, 0xE, 0x0) => self.screen_clear(),
-                (0x0, 0x0, 0xE, 0xE) => self.return_from_subroutine(),
-                (0x1, _, _, _) => self.jump_to_subroutine(nnn),
-                (0x2, _, _, _) => self.call_subroutine(nnn),
-                (0x3, _, _, _) => self.skip_if_x(x, kk),
-                (0x4, _, _, _) => self.skip_if_not_x(x, kk),
-                (0x5, _, _, 0x0) => self.skip_if_x_eq_y(x, y),
-                (0x6, _, _, _) => self.store_to_x(x, kk),
-                (0x7, _, _, _) => self.add_to_x(x, kk),
-                (0x8, _, _, 0x0) => self.store_y_to_x(x, y),
-                (0x8, _, _, 0x1) => self.set_x_xory(x, y),
-                (0x8, _, _, 0x2) => self.set_x_xandy(x, y),
-                (0x8, _, _, 0x3) => self.set_x_xxory(x, y),
-                (0x8, _, _, 0x4) => self.add_y_to_x(x, y),
-                (0x8, _, _, 0x5) => self.sub_y_from_x(x, y),
-                (0x8, _, _, 0x6) => self.right_shift_x(x),
-                (0x8, _, _, 0x7) => self.sub_x_from_y(x, y),
-                (0x8, _, _, 0xE) => self.left_shift_x(x),
-                (0x9, _, _, 0x0) => self.comparte_x_y(x, y),
-                (0xA, _, _, _) => self.store_addres(nnn),
-                (0xB, _, _, _) => self.jump_to_addr_and_v0(nnn),
-                (0xC, _, _, _) => self.store_rand_to_x(x, kk),
-                (0xD, _, _, _) => self.draw_a_sprite(x, y, d),
-                (0xE, _, 0x9, 0xE) => self.skip_if_pressed(x),
-                (0xE, _, 0xA, 0x1) => self.skip_if_not_pressed(x),
-                (0xF, _, 0x0, 0x7) => self.store_delayt_to_x(x),
-                (0xF, _, 0x0, 0xA) => self.wait_for_press(x),
-                (0xF, _, 0x1, 0x5) => self.set_delayt(x),
-                (0xF, _, 0x1, 0x8) => self.set_soundt(x),
-                (0xF, _, 0x1, 0xE) => self.add_x_to_i(x),
-                (0xF, _, 0x2, 0x9) => self.set_i_to_sprite_addr(x),
-                (0xF, _, 0x3, 0x3) => self.bcd_from_x_to_i(x),
-                (0xF, _, 0x5, 0x5) => self.store_registers_to_memory(x),
-                (0xF, _, 0x6, 0x5) => self.read_memory_to_registers(x),
-                _ => todo!("TODO: {:0x}", opcode),
-            }
+        match (c, x, y, d) {
+            (0x0, 0x0, 0xE, 0x0) => self.screen_clear(),
+            (0x0, 0x0, 0xE, 0xE) => self.return_from_subroutine(),
+            (0x1, _, _, _) => self.jump_to_subroutine(nnn),
+            (0x2, _, _, _) => self.call_subroutine(nnn),
+            (0x3, _, _, _) => self.skip_if_x(x, kk),
+            (0x4, _, _, _) => self.skip_if_not_x(x, kk),
+            (0x5, _, _, 0x0) => self.skip_if_x_eq_y(x, y),
+            (0x6, _, _, _) => self.store_to_x(x, kk),
+            (0x7, _, _, _) => self.add_to_x(x, kk),
+            (0x8, _, _, 0x0) => self.store_y_to_x(x, y),
+            (0x8, _, _, 0x1) => self.set_x_xory(x, y),
+            (0x8, _, _, 0x2) => self.set_x_xandy(x, y),
+            (0x8, _, _, 0x3) => self.set_x_xxory(x, y),
+            (0x8, _, _, 0x4) => self.add_y_to_x(x, y),
+            (0x8, _, _, 0x5) => self.sub_y_from_x(x, y),
+            (0x8, _, _, 0x6) => self.right_shift_x(x),
+            (0x8, _, _, 0x7) => self.sub_x_from_y(x, y),
+            (0x8, _, _, 0xE) => self.left_shift_x(x),
+            (0x9, _, _, 0x0) => self.comparte_x_y(x, y),
+            (0xA, _, _, _) => self.store_addres(nnn),
+            (0xB, _, _, _) => self.jump_to_addr_and_v0(nnn),
+            (0xC, _, _, _) => self.store_rand_to_x(x, kk),
+            (0xD, _, _, _) => self.draw_a_sprite(x, y, d),
+            (0xE, _, 0x9, 0xE) => self.skip_if_pressed(x),
+            (0xE, _, 0xA, 0x1) => self.skip_if_not_pressed(x),
+            (0xF, _, 0x0, 0x7) => self.store_delayt_to_x(x),
+            (0xF, _, 0x0, 0xA) => self.wait_for_press(x),
+            (0xF, _, 0x1, 0x5) => self.set_delayt(x),
+            (0xF, _, 0x1, 0x8) => self.set_soundt(x),
+            (0xF, _, 0x1, 0xE) => self.add_x_to_i(x),
+            (0xF, _, 0x2, 0x9) => self.set_i_to_sprite_addr(x),
+            (0xF, _, 0x3, 0x3) => self.bcd_from_x_to_i(x),
+            (0xF, _, 0x5, 0x5) => self.store_registers_to_memory(x),
+            (0xF, _, 0x6, 0x5) => self.read_memory_to_registers(x),
+            _ => todo!("TODO: {:0x}", opcode),
+        }
 
-            self.program_counter_increase();
+        self.program_counter_increase();
 
-            if last_tick.elapsed() >= std::time::Duration::from_millis(TIMER_RATE){
-                if self.delay_timer > 0 { self.delay_timer -= 1};
-                if self.sound_timer > 0 { self.sound_timer -= 1};
+        if self.last_tick.elapsed() >= std::time::Duration::from_millis(TIMER_RATE){
+            if self.delay_timer > 0 { self.delay_timer -= 1};
+            if self.sound_timer > 0 { self.sound_timer -= 1};
 
-                last_tick = std::time::Instant::now();
-            }
+            self.last_tick = std::time::Instant::now();
         }
     }
     fn read_memory_to_registers(&mut self, x: u8) {
