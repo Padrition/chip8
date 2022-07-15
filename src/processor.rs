@@ -1,5 +1,6 @@
 use rand::Rng;
 
+use crate::cartridge_reader::Cartridge;
 use super::HEIGHT;
 use super::PROGRAM_START;
 use super::RAM;
@@ -58,6 +59,10 @@ impl Cpu {
             keypad: [false;16],
             last_tick: std::time::Instant::now(),
         }
+    }
+
+    pub fn load_rom(&mut self, rom: Cartridge){
+        self.memory[PROGRAM_START..PROGRAM_START + rom.rom.len()].clone_from_slice(rom.rom.as_slice());
     }
 
     pub fn read_pixels(&self) -> [[u8;WIDTH]; HEIGHT]{

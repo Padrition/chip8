@@ -1,6 +1,20 @@
 use super::*;
 
 #[test]
+fn load_rom_test() {
+    let mut cpu = Cpu::new();
+    let cartridge = Cartridge{
+        rom: vec![55, 55, 55],
+    };
+
+    cpu.load_rom(cartridge);
+
+    assert_eq!(cpu.memory[0x200], 55);
+    assert_eq!(cpu.memory[0x201], 55);
+    assert_eq!(cpu.memory[0x202], 55);
+}
+
+#[test]
 #[rustfmt::skip]
 fn draw_a_sprite_test() {
     let mut cpu = Cpu::new();
