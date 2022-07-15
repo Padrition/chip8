@@ -145,7 +145,7 @@ impl Cpu {
             (0xF, _, 0x3, 0x3) => self.bcd_from_x_to_i(x),
             (0xF, _, 0x5, 0x5) => self.store_registers_to_memory(x),
             (0xF, _, 0x6, 0x5) => self.read_memory_to_registers(x),
-            _ => todo!("TODO: {:0x}", opcode),
+            _ => println!("Emulator was unable to match the following opcode: {:0x}", opcode),
         }
 
         self.program_counter_increase();
@@ -317,7 +317,9 @@ impl Cpu {
     }
 
     fn add_to_x(&mut self, x: u8, kk: u8) {
-        self.register[x as usize] += kk;
+        let vx = self.register[x as usize];
+        let (vx,_) = vx.overflowing_add(kk);
+        self.register[x as usize] = vx;
     }
 
     fn store_to_x(&mut self, x: u8, kk: u8) {
