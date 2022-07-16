@@ -6,7 +6,7 @@ use super::PROGRAM_START;
 use super::RAM;
 use super::WIDTH;
 
-const TIMER_RATE: u64 = 1667; //60Hz - the speed at wich timers count down
+const TIMER_RATE: u64 = 16667; //60Hz - the speed at wich timers count down
 
 const CHIP8_FONT: [u8; 80] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -26,7 +26,6 @@ const CHIP8_FONT: [u8; 80] = [
     0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
     0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 ];
-
 #[derive(Debug)]
 pub struct Cpu {
     memory: [u8; RAM],
@@ -38,7 +37,7 @@ pub struct Cpu {
     delay_timer: u8,
     sound_timer: u8,
     pixels: [[u8; WIDTH]; HEIGHT],
-    keypad: [bool; 16],
+    pub keypad: [bool; 16],
     last_tick: std::time::Instant,
 }
 
@@ -62,7 +61,8 @@ impl Cpu {
     }
 
     pub fn load_rom(&mut self, rom: Cartridge){
-        self.memory[PROGRAM_START..PROGRAM_START + rom.rom.len()].clone_from_slice(rom.rom.as_slice());
+        let end = PROGRAM_START + rom.rom.len();
+        self.memory[PROGRAM_START..end].clone_from_slice(rom.rom.as_slice());
     }
 
     pub fn read_pixels(&self) -> [[u8;WIDTH]; HEIGHT]{
@@ -150,7 +150,7 @@ impl Cpu {
 
         self.program_counter_increase();
 
-        if self.last_tick.elapsed() >= std::time::Duration::from_millis(TIMER_RATE){
+        if self.last_tick.elapsed() >= std::time::Duration::from_micros(TIMER_RATE){
             if self.delay_timer > 0 { self.delay_timer -= 1};
             if self.sound_timer > 0 { self.sound_timer -= 1};
 
@@ -158,12 +158,12 @@ impl Cpu {
         }
     }
     fn read_memory_to_registers(&mut self, x: u8) {
-        for j in 0..x {
+        for j in 0..x + 1{
             self.register[j as usize] = self.memory[(self.i + j as u16) as usize];
         }
     }
     fn store_registers_to_memory(&mut self, x: u8) {
-        for i in 0..x {
+        for i in 0..x + 1 {
             self.memory[(self.i + i as u16) as usize] = self.register[i as usize];
         }
     }
@@ -333,13 +333,13 @@ impl Cpu {
     }
 
     fn skip_if_not_x(&mut self, x: u8, kk: u8) {
-        if self.register[x as usize] as u8 != kk {
+        if self.register[x as usize] != kk {
             self.program_counter_increase();
         }
     }
 
     fn skip_if_x(&mut self, x: u8, kk: u8) {
-        if self.register[x as usize] as u8 == kk {
+        if self.register[x as usize] == kk {
             self.program_counter_increase();
         }
     }
@@ -368,6 +368,7 @@ impl Cpu {
 
     fn jump_to_subroutine(&mut self, nnn: u16) {
         self.program_counter = nnn as usize;
+        self.program_counter_decrease();
     }
 }
 

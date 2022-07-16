@@ -32,7 +32,7 @@ impl GameGraphics{
                 for (x, pixel) in row.into_iter().enumerate(){
                     let x = x as f64 * SIZE_SCALLER as f64;
                     let y = y as f64 * SIZE_SCALLER as f64;
-                    if pixel == 1{
+                    if pixel != 0{
                         square.draw([x,y, PIXEL_DIMENTION, PIXEL_DIMENTION], &DrawState::default(), c.transform, gl);
                     }
                 }
