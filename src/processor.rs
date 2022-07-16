@@ -218,21 +218,19 @@ impl Cpu {
         }
     }
     fn draw_a_sprite(&mut self, x: u8, y: u8, n: u8) {
-        for sprite_step in 0..n {
-            let y = (self.register[y as usize] + sprite_step) % HEIGHT as u8;
+        let x = x as usize;
+        let y = y as usize;
+        let n = n as usize;
+
+        self.register[0xF] = 0;
+        for byte in 0..n {
+            let y = (self.register[y] as usize + byte) % HEIGHT;
             for bit in 0..8 {
-                let sprite_bit =
-                    (self.memory[(self.i + sprite_step as u16) as usize] >> (7 - bit)) & 1;
-                let x = (self.register[x as usize] + bit) % WIDTH as u8;
-                let old_pixel = self.pixels[y as usize][x as usize];
-                self.pixels[y as usize][x as usize] ^= sprite_bit;
-                if old_pixel == 1 {
-                    self.register[0xF] = if old_pixel == self.pixels[y as usize][x as usize] {
-                        0
-                    } else {
-                        1
-                    };
-                }
+                let x = (self.register[x] as usize + bit) % WIDTH ;
+                let pixel=
+                    (self.memory[self.i as usize + byte as usize] >> (7 - bit)) & 1;
+                self.register[0x0F] |= pixel & self.pixels[y][x];
+                self.pixels[y][x] ^= pixel;
             }
         }
     }
