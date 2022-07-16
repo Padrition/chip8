@@ -78,7 +78,7 @@ fn read_memory_to_registers_test() {
     for j in 0..cpu.register.len() {
         cpu.memory[0x300 + j] = j as u8;
     }
-    cpu.read_memory_to_registers(16);
+    cpu.read_memory_to_registers(15);
     for j in 0..cpu.register.len() {
         assert_eq!(cpu.register[j], j as u8);
     }
@@ -90,7 +90,7 @@ fn store_registers_to_memory_test() {
     for j in 0..cpu.register.len() {
         cpu.register[j] = j as u8;
     }
-    cpu.store_registers_to_memory(16);
+    cpu.store_registers_to_memory(15);
     for j in 0..cpu.register.len() {
         assert_eq!(cpu.register[j], cpu.memory[0x300 + j]);
     }
@@ -263,11 +263,19 @@ fn skip_if_x_test() {
 #[test]
 fn call_and_return_subroutine_test() {
     let mut cpu = Cpu::new();
-    cpu.call_subroutine(0x400);
+    //call subroutine
+    cpu.memory[0x200] = 0x24;
+    cpu.memory[0x202] = 0x00;
+    //return from subroutine
+    cpu.memory[0x400] = 0x00;
+    cpu.memory[0x401] = 0xEE;
+
+    cpu.run_next_instruction();
     assert_eq!(cpu.program_counter, 0x400);
     assert_eq!(cpu.stack_pointer, 1);
     assert_eq!(cpu.stack[0], 0x200);
-    cpu.return_from_subroutine();
+
+    cpu.run_next_instruction();
     assert_eq!(cpu.program_counter, 0x200);
     assert_eq!(cpu.stack_pointer, 0);
 }
@@ -276,15 +284,6 @@ fn call_and_return_subroutine_test() {
 fn return_from_subroutine_test_panic() {
     let mut cpu = Cpu::new();
     cpu.return_from_subroutine();
-}
-#[test]
-fn return_from_subroutine_test() {
-    let mut cpu = Cpu::new();
-    cpu.stack_pointer = 15;
-    cpu.stack[14] = 0x300;
-    cpu.return_from_subroutine();
-    assert_eq!(cpu.program_counter, 0x300);
-    assert_eq!(cpu.stack_pointer, 14);
 }
 #[test]
 #[should_panic]
@@ -296,7 +295,9 @@ fn call_subroutine_test_panic_case() {
 #[test]
 fn call_subroutine_test() {
     let mut cpu = Cpu::new();
-    cpu.call_subroutine(0x300);
+    cpu.memory[0x200] = 0x23;
+    cpu.memory[0x202] = 0x00;
+    cpu.run_next_instruction();
     assert_eq!(cpu.program_counter, 0x300);
     assert_eq!(cpu.stack[0], 0x200);
     assert_eq!(cpu.stack_pointer, 1);
@@ -304,7 +305,9 @@ fn call_subroutine_test() {
 #[test]
 fn jump_to_subroutine_test() {
     let mut cpu = Cpu::new();
-    cpu.jump_to_subroutine(0x300);
+    cpu.memory[0x200] = 0x13;
+    cpu.memory[0x202] = 0x00;
+    cpu.run_next_instruction();
     assert_eq!(cpu.program_counter, 0x300);
 }
 #[test]

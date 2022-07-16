@@ -348,6 +348,7 @@ impl Cpu {
         }
         self.stack_pointer -= 1;
         self.program_counter = self.stack[self.stack_pointer as usize] as usize;
+        self.program_counter_decrease();
     }
 
     fn call_subroutine(&mut self, nnn: u16) {
