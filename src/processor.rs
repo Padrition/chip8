@@ -148,14 +148,16 @@ impl Cpu {
             _ => println!("Emulator was unable to match the following opcode: {:0x}", opcode),
         }
 
-        self.program_counter_increase();
-
+        
         if self.last_tick.elapsed() >= std::time::Duration::from_micros(TIMER_RATE){
             if self.delay_timer > 0 { self.delay_timer -= 1};
             if self.sound_timer > 0 { self.sound_timer -= 1};
-
+            
             self.last_tick = std::time::Instant::now();
         }
+        
+        self.program_counter_increase();
+
     }
     fn read_memory_to_registers(&mut self, x: u8) {
         for j in 0..x + 1{
@@ -183,7 +185,7 @@ impl Cpu {
         self.i = vx as u16 * sprite_length;
     }
     fn add_x_to_i(&mut self, x: u8) {
-        self.i += x as u16;
+        self.i += self.register[x as usize] as u16;
     }
     fn set_soundt(&mut self, x: u8) {
         let vx = self.register[x as usize];
@@ -256,7 +258,7 @@ impl Cpu {
         }
     }
     fn left_shift_x(&mut self, x: u8) {
-        self.register[0xF] = self.register[x as usize] & 0b0000_0001;
+        self.register[0xF] = (self.register[x as usize] & 0b1000_0000) >> 7;
         self.register[x as usize] <<= 1;
     }
     fn sub_x_from_y(&mut self, x: u8, y: u8) {
@@ -348,7 +350,7 @@ impl Cpu {
         }
         self.stack_pointer -= 1;
         self.program_counter = self.stack[self.stack_pointer as usize] as usize;
-        self.program_counter_decrease();
+        
     }
 
     fn call_subroutine(&mut self, nnn: u16) {
