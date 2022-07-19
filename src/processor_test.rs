@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn load_rom_test() {
     let mut cpu = Cpu::new();
-    let cartridge = Cartridge{
+    let cartridge = Cartridge {
         rom: vec![55, 55, 55],
     };
 

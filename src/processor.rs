@@ -1,12 +1,11 @@
 use rand::Rng;
 
-use crate::cartridge_reader::Cartridge;
 use super::HEIGHT;
 use super::PROGRAM_START;
 use super::RAM;
+use super::TIMER_RATE;
 use super::WIDTH;
-
-const TIMER_RATE: u64 = 16667; //60Hz - the speed at wich timers count down
+use crate::cartridge_reader::Cartridge;
 
 const CHIP8_FONT: [u8; 80] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -55,36 +54,40 @@ impl Cpu {
             delay_timer: 0,
             sound_timer: 0,
             pixels: [[0; WIDTH]; HEIGHT],
-            keypad: [false;16],
+            keypad: [false; 16],
             last_tick: std::time::Instant::now(),
         }
     }
 
-    pub fn load_rom(&mut self, rom: Cartridge){
+    pub fn check_sound_timer(&self) -> u8 {
+        self.sound_timer
+    }
+
+    pub fn load_rom(&mut self, rom: Cartridge) {
         let end = PROGRAM_START + rom.rom.len();
         self.memory[PROGRAM_START..end].clone_from_slice(rom.rom.as_slice());
     }
 
-    pub fn read_pixels(&self) -> [[u8;WIDTH]; HEIGHT]{
+    pub fn read_pixels(&self) -> [[u8; WIDTH]; HEIGHT] {
         self.pixels
     }
 
-    fn what_key_is_pressed(&self) -> Option<u8>{
-        for (key, pressed) in self.keypad.iter().enumerate(){
-            if *pressed{
+    fn what_key_is_pressed(&self) -> Option<u8> {
+        for (key, pressed) in self.keypad.iter().enumerate() {
+            if *pressed {
                 return Some(key as u8);
             }
         }
         None
     }
 
-    pub fn load_key_map(&mut self, key_map: &[bool;16]){
-        for (key, state) in key_map.iter().enumerate(){
+    pub fn load_key_map(&mut self, key_map: &[bool; 16]) {
+        for (key, state) in key_map.iter().enumerate() {
             self.keypad[key] = *state;
         }
     }
 
-    fn program_counter_decrease(&mut self){
+    fn program_counter_decrease(&mut self) {
         self.program_counter -= 2;
     }
 
@@ -145,22 +148,27 @@ impl Cpu {
             (0xF, _, 0x3, 0x3) => self.bcd_from_x_to_i(x),
             (0xF, _, 0x5, 0x5) => self.store_registers_to_memory(x),
             (0xF, _, 0x6, 0x5) => self.read_memory_to_registers(x),
-            _ => println!("Emulator was unable to match the following opcode: {:0x}", opcode),
+            _ => println!(
+                "Emulator was unable to match the following opcode: {:0x}",
+                opcode
+            ),
         }
 
-        
-        if self.last_tick.elapsed() >= std::time::Duration::from_micros(TIMER_RATE){
-            if self.delay_timer > 0 { self.delay_timer -= 1};
-            if self.sound_timer > 0 { self.sound_timer -= 1};
-            
+        if self.last_tick.elapsed() >= std::time::Duration::from_micros(TIMER_RATE) {
+            if self.delay_timer > 0 {
+                self.delay_timer -= 1
+            };
+            if self.sound_timer > 0 {
+                self.sound_timer -= 1
+            };
+
             self.last_tick = std::time::Instant::now();
         }
-        
-        self.program_counter_increase();
 
+        self.program_counter_increase();
     }
     fn read_memory_to_registers(&mut self, x: u8) {
-        for j in 0..x + 1{
+        for j in 0..x + 1 {
             self.register[j as usize] = self.memory[(self.i + j as u16) as usize];
         }
     }
@@ -199,7 +207,7 @@ impl Cpu {
     // if there is a pressed key, write it's value to the register VX
     // Otherwise decrease program_counter to wait for a key press
     fn wait_for_press(&mut self, x: u8) {
-        match self.what_key_is_pressed(){
+        match self.what_key_is_pressed() {
             Some(key) => self.register[x as usize] = key,
             None => self.program_counter_decrease(),
         }
@@ -209,13 +217,13 @@ impl Cpu {
     }
     fn skip_if_not_pressed(&mut self, x: u8) {
         let key_wanted = self.register[x as usize] as usize;
-        if !self.keypad[key_wanted]{
+        if !self.keypad[key_wanted] {
             self.program_counter_increase();
         }
     }
     fn skip_if_pressed(&mut self, x: u8) {
         let key_wanted = self.register[x as usize] as usize;
-        if self.keypad[key_wanted]{
+        if self.keypad[key_wanted] {
             self.program_counter_increase();
         }
     }
@@ -228,9 +236,8 @@ impl Cpu {
         for byte in 0..n {
             let y = (self.register[y] as usize + byte) % HEIGHT;
             for bit in 0..8 {
-                let x = (self.register[x] as usize + bit) % WIDTH ;
-                let pixel=
-                    (self.memory[self.i as usize + byte as usize] >> (7 - bit)) & 1;
+                let x = (self.register[x] as usize + bit) % WIDTH;
+                let pixel = (self.memory[self.i as usize + byte as usize] >> (7 - bit)) & 1;
                 self.register[0x0F] |= pixel & self.pixels[y][x];
                 self.pixels[y][x] ^= pixel;
             }
@@ -318,7 +325,7 @@ impl Cpu {
 
     fn add_to_x(&mut self, x: u8, kk: u8) {
         let vx = self.register[x as usize];
-        let (vx,_) = vx.overflowing_add(kk);
+        let (vx, _) = vx.overflowing_add(kk);
         self.register[x as usize] = vx;
     }
 
@@ -350,7 +357,6 @@ impl Cpu {
         }
         self.stack_pointer -= 1;
         self.program_counter = self.stack[self.stack_pointer as usize] as usize;
-        
     }
 
     fn call_subroutine(&mut self, nnn: u16) {
@@ -364,7 +370,7 @@ impl Cpu {
     }
 
     fn screen_clear(&mut self) {
-        self.pixels = [[0;WIDTH];HEIGHT];
+        self.pixels = [[0; WIDTH]; HEIGHT];
     }
 
     fn jump_to_subroutine(&mut self, nnn: u16) {
