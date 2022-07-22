@@ -42,10 +42,8 @@ pub struct Cpu {
 
 impl Cpu {
     pub fn new() -> Cpu {
-        let mut ram = [0; RAM];
-        ram[..CHIP8_FONT.len()].clone_from_slice(&CHIP8_FONT);
         Cpu {
-            memory: ram,
+            memory: [0;RAM],
             register: [0; 16],
             program_counter: PROGRAM_START,
             stack: [0; 16],
@@ -64,6 +62,9 @@ impl Cpu {
     }
 
     pub fn load_rom(&mut self, rom: Cartridge) {
+        self.memory = [0;RAM];
+        self.memory[..CHIP8_FONT.len()].clone_from_slice(&CHIP8_FONT);
+
         let end = PROGRAM_START + rom.rom.len();
         self.memory[PROGRAM_START..end].clone_from_slice(rom.rom.as_slice());
     }
