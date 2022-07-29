@@ -61,7 +61,7 @@ impl Cpu {
         self.sound_timer
     }
 
-    pub fn load_rom(&mut self, rom: Cartridge) {
+    pub fn load_rom(&mut self, rom: &Cartridge) {
         self.memory = [0;RAM];
         self.memory[..CHIP8_FONT.len()].clone_from_slice(&CHIP8_FONT);
 
