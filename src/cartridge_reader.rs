@@ -1,13 +1,13 @@
 use std::fs::{ReadDir, read};
 pub struct Cartridge {
-    pub games: Vec<String>,
+    pub game_paths: Vec<String>,
     pub rom: Vec<u8>,
 }
 
 impl Cartridge {
     pub fn new() -> Cartridge {
         Cartridge { 
-            games: Vec::<String>::new(),
+            game_paths: Vec::<String>::new(),
             rom: Vec::<u8>::new()
         }
     }
@@ -20,7 +20,7 @@ impl Cartridge {
             if file_extension == "ch8"{
                 let game_path_str = file_path.to_str().unwrap();
                 let game_path = game_path_str.to_string();
-                self.games.push(game_path);
+                self.game_paths.push(game_path);
             }
         }
     }
