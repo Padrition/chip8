@@ -46,14 +46,12 @@ fn main() {
     let mut glyph = GlyphCache::new("assets/VCR_OSD_MONO.ttf", () , TextureSettings::new()).unwrap();
 
     let mut cpu = Cpu::new();
-    let mut cartridge = Cartridge::new("/home/padrition/Downloads/mini-lights-out.ch8");//TO BE FIXED
+    let mut cartridge = Cartridge::new();
     let mut game_graphics = GameGraphics::new();
     let mut keypad = Keypad::new();
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
     let mut audio = Audio::new(640.0, stream_handle);
     let mut emulator = Emulator::new();
-
-    cpu.load_rom(cartridge);
 
     let mut last_tick = Instant::now();
 
@@ -61,36 +59,37 @@ fn main() {
     while let Some(e) = events.next(&mut window) {
 
         match emulator.emulator_state{
-            EmulatorState::InMenu => {
-                if let Some(Button::Keyboard(key)) = e.press_args(){
-                    game_graphics.draw = true;
-                    match key{
-                        Key::S => emulator.switch_choice(),
-                        Key::W => emulator.switch_choice(),
-                        Key::Up => emulator.switch_choice(),
-                        Key::Down => emulator.switch_choice(),
-                        Key::Space => {
-                            match emulator.emulator_choice{
-                                EmulatorChoice::LoadRom => emulator.switch_state(),
-                                EmulatorChoice::Quit => {return},
-                            }
-                        },
-                        _ => {game_graphics.draw = false},
-                    }
-                } 
+
+            EmulatorState::InRomLoader => {
                 if let Some(args) = e.render_args(){
-                    game_graphics.draw_ui(&args, &mut glyph, &emulator);
+                    game_graphics.draw_ui(&args, &mut glyph, &cartridge);
                     game_graphics.draw = false;
                 }
+                if let Some(Button::Keyboard(key)) = e.press_args(){
+                    match key {
+                        Key::A => {},
+                        Key::Left => {},
+                        Key::D => {},
+                        Key::Right => {},
+                        Key::Return => {
+                            cpu.load_rom(&cartridge);
+                        },
+                        Key::Space => {
+                            cpu.load_rom(&cartridge);
+                        },
+                        Key::Escape => {
+                            return;
+                        }
+                        _ => {},
+                    }
+                }
             },
-
-            EmulatorState::LoadRom => {},
 
             EmulatorState::InGame => {
                 if let Some(Button::Keyboard(key)) = e.press_args() {
                     match key{
                         Key::Escape => {
-                            emulator.emulator_state = EmulatorState::InMenu;
+                            emulator.emulator_state = EmulatorState::InRomLoader;
                         },
                         _ => {
                             keypad.presse_key(key);
