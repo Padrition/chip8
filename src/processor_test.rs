@@ -7,69 +7,11 @@ fn load_rom_test() {
         rom: vec![55, 55, 55],
     };
 
-    cpu.load_rom(cartridge);
+    cpu.load_rom(&cartridge);
 
     assert_eq!(cpu.memory[0x200], 55);
     assert_eq!(cpu.memory[0x201], 55);
     assert_eq!(cpu.memory[0x202], 55);
-}
-
-#[test]
-#[rustfmt::skip]
-fn draw_a_sprite_test() {
-    let mut cpu = Cpu::new();
-    cpu.register[0] = 0; //X
-    cpu.register[1] = 0; //Y
-    cpu.i = 75; // F
-    cpu.draw_a_sprite(0, 1, 5);
-    let mut f = [[0;WIDTH];HEIGHT];
-    f [0][0] = 1; f [0][1] = 1; f [0][2] = 1; f [0][3] = 1; // X X X X
-    f [1][0] = 1; f [1][1] = 0; f [1][2] = 0; f [1][3] = 0; // X
-    f [2][0] = 1; f [2][1] = 1; f [2][2] = 1; f [2][3] = 1; // X X X X
-    f [3][0] = 1; f [3][1] = 0; f [3][2] = 0; f [3][3] = 0; // X
-    f [4][0] = 1; f [4][1] = 0; f [4][2] = 0; f [4][3] = 0; // X
-
-    assert_eq!(f, cpu.pixels);
-    cpu.pixels = [[0;WIDTH]; HEIGHT];
-
-
-    cpu.register[0] = 63; //X
-    cpu.register[1] = 0; //Y
-    cpu.i = 75; // F
-    cpu.draw_a_sprite(0, 1, 5);
-    let mut f = [[0;WIDTH];HEIGHT];
-    f [0][63] = 1; f [0][0] = 1; f [0][1] = 1; f [0][2] = 1; // X X X X
-    f [1][63] = 1; f [1][0] = 0; f [1][1] = 0; f [1][2] = 0; // X
-    f [2][63] = 1; f [2][0] = 1; f [2][1] = 1; f [2][2] = 1; // X X X X
-    f [3][63] = 1; f [3][0] = 0; f [3][1] = 0; f [3][2] = 0; // X
-    f [4][63] = 1; f [4][0] = 0; f [4][1] = 0; f [4][2] = 0; // X
-
-    assert_eq!(f, cpu.pixels);
-    cpu.pixels = [[0;WIDTH]; HEIGHT];
-
-    cpu.register[0] = 0; //X
-    cpu.register[1] = 31; //Y
-    cpu.i = 75; // F
-    cpu.draw_a_sprite(0, 1, 5);
-    let mut f = [[0;WIDTH];HEIGHT];
-    f [31][0] = 1; f [31][1] = 1; f [31][2] = 1; f [31][3] = 1; // X X X X
-    f [0][0] = 1; f [0][1] = 0; f [0][2] = 0; f [0][3] = 0;     // X
-    f [1][0] = 1; f [1][1] = 1; f [1][2] = 1; f [1][3] = 1;     // X X X X
-    f [2][0] = 1; f [2][1] = 0; f [2][2] = 0; f [2][3] = 0;     // X
-    f [3][0] = 1; f [3][1] = 0; f [3][2] = 0; f [3][3] = 0;     // X
-
-    assert_eq!(f, cpu.pixels);
-    cpu.pixels = [[0;WIDTH];HEIGHT];
-
-    cpu.register[0] = 0; //X
-    cpu.register[1] = 0; //Y
-    cpu.i = 76;
-    cpu.pixels [0][0] = 1;
-    cpu.draw_a_sprite(0, 1, 1);
-    let f = [[0;WIDTH];HEIGHT];
-
-    assert_eq!(f, cpu.pixels);
-
 }
 #[test]
 fn read_memory_to_registers_test() {
@@ -125,8 +67,10 @@ fn store_rand_to_x_test() {
 fn left_shift_x_test() {
     let mut cpu = Cpu::new();
     cpu.register[0] = 5;
-    cpu.left_shift_x(0);
-    assert_eq!(cpu.register[0xF], 1);
+    cpu.memory[0x200] = 0x80;
+    cpu.memory[0x201] = 0x0E;
+    cpu.run_next_instruction();
+    assert_eq!(cpu.register[0xF], 0);
     assert_eq!(cpu.register[0], 10);
 }
 #[test]
@@ -265,7 +209,7 @@ fn call_and_return_subroutine_test() {
     let mut cpu = Cpu::new();
     //call subroutine
     cpu.memory[0x200] = 0x24;
-    cpu.memory[0x202] = 0x00;
+    cpu.memory[0x201] = 0x00;
     //return from subroutine
     cpu.memory[0x400] = 0x00;
     cpu.memory[0x401] = 0xEE;
@@ -276,7 +220,7 @@ fn call_and_return_subroutine_test() {
     assert_eq!(cpu.stack[0], 0x200);
 
     cpu.run_next_instruction();
-    assert_eq!(cpu.program_counter, 0x200);
+    assert_eq!(cpu.program_counter, 0x202);
     assert_eq!(cpu.stack_pointer, 0);
 }
 #[test]
