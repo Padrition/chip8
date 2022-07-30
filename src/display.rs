@@ -57,7 +57,7 @@ impl GameGraphics {
             let rec_x = self.center_text_x(CHOOSE_GAME) - 2.0 * SIZE_SCALLER as f64;
             let rec_y = self.text_y(2) - (FONT_SIZE + SIZE_SCALLER) as f64;
             let rec_with_border = Rectangle::new_round_border(WHITE, 10.0, 1.0);
-            let rom_name = "rom";
+            let rom_name = cartridge.get_game_name();
             let rom_x = self.center_text_x(rom_name);
             let rom_y = self.text_y(2);
             let left_arrow_x = rec_x - FONT_SIZE as f64; 
