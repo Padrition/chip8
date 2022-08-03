@@ -1,24 +1,23 @@
 mod audio;
 mod cartridge_reader;
 mod display;
+mod emulator;
 mod keypad;
 mod processor;
-mod emulator;
 use audio::*;
 use cartridge_reader::*;
 use display::*;
+use emulator::*;
 use keypad::*;
 use processor::*;
-use emulator::*;
 
 use std::time::{Duration, Instant};
 
 use glutin_window::GlutinWindow as Window;
-use opengl_graphics::{OpenGL, GlyphCache, TextureSettings};
+use opengl_graphics::{GlyphCache, OpenGL, TextureSettings};
 use piston::event_loop::{EventSettings, Events};
 use piston::input::*;
 use piston::window::WindowSettings;
-
 
 use rodio::OutputStream;
 
@@ -43,7 +42,7 @@ fn main() {
         .build()
         .unwrap();
 
-    let mut glyph = GlyphCache::new("assets/VCR_OSD_MONO.ttf", () , TextureSettings::new()).unwrap();
+    let mut glyph = GlyphCache::new("assets/VCR_OSD_MONO.ttf", (), TextureSettings::new()).unwrap();
 
     let mut cpu = Cpu::new();
     let mut cartridge = Cartridge::new();
@@ -57,51 +56,54 @@ fn main() {
 
     let mut events = Events::new(EventSettings::new());
     while let Some(e) = events.next(&mut window) {
-
-        match emulator.emulator_state{
-
+        match emulator.emulator_state {
             EmulatorState::InRomLoader => {
-                if let Some(args) = e.render_args(){
+                if let Some(args) = e.render_args() {
                     game_graphics.draw_ui(&args, &mut glyph, &cartridge);
                     game_graphics.draw = false;
                 }
-                if let Some(Button::Keyboard(key)) = e.press_args(){
+                if let Some(Button::Keyboard(key)) = e.press_args() {
                     match key {
-                        Key::A => {},
-                        Key::Left => {},
-                        Key::D => {},
-                        Key::Right => {},
+                        Key::A => {
+                            cartridge.previous_game();
+                            game_graphics.draw = true;
+                        }
+                        Key::Left => {
+                            cartridge.previous_game();
+                            game_graphics.draw = true;
+                        }
+                        Key::D => {
+                            cartridge.next_game();
+                            game_graphics.draw = true;
+                        }
+                        Key::Right => {
+                            cartridge.next_game();
+                            game_graphics.draw = true;
+                        }
                         Key::Return => {
+                            cartridge.game_to_rom();
                             cpu.load_rom(&cartridge);
-                        },
+                            emulator.switch_state();
+                        }
                         Key::Space => {
+                            cartridge.game_to_rom();
                             cpu.load_rom(&cartridge);
-                        },
+                            emulator.switch_state();
+                        }
                         Key::Escape => {
                             return;
                         }
-                        _ => {},
+                        _ => {}
                     }
                 }
-            },
+            }
 
             EmulatorState::InGame => {
-                if let Some(Button::Keyboard(key)) = e.press_args() {
-                    match key{
-                        Key::Escape => {
-                            emulator.emulator_state = EmulatorState::InRomLoader;
-                        },
-                        _ => {
-                            keypad.presse_key(key);
-                        },
-                    }
-                }
-                
                 if last_tick.elapsed() >= Duration::from_micros(EMULATOR_RATE) {
                     cpu.load_key_map(keypad.map_keys());
-                    
+
                     cpu.run_next_instruction();
-                    
+
                     last_tick = Instant::now();
                 }
                 if let Some(args) = e.render_args() {
@@ -111,8 +113,20 @@ fn main() {
                     keypad.release_key(key);
                 }
                 audio.play(&cpu);
-            },
-        }
 
+                if let Some(Button::Keyboard(key)) = e.press_args() {
+                    match key {
+                        Key::Escape => {
+                            cpu.reset();
+                            emulator.emulator_state = EmulatorState::InRomLoader;
+                            game_graphics.draw = true;
+                        }
+                        _ => {
+                            keypad.presse_key(key);
+                        }
+                    }
+                }
+            }
+        }
     }
 }

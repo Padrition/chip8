@@ -4,7 +4,7 @@ use super::*;
 fn load_rom_test() {
     let mut cpu = Cpu::new();
     let mut cartridge = Cartridge::new();
-    cartridge.rom = vec![55,55,55];
+    cartridge.rom = vec![55, 55, 55];
 
     cpu.load_rom(&cartridge);
 

@@ -43,7 +43,7 @@ pub struct Cpu {
 impl Cpu {
     pub fn new() -> Cpu {
         let mut cpu = Cpu {
-            memory: [0;RAM],
+            memory: [0; RAM],
             register: [0; 16],
             program_counter: PROGRAM_START,
             stack: [0; 16],
@@ -87,7 +87,7 @@ impl Cpu {
         }
     }
 
-    pub fn reset(&mut self){
+    pub fn reset(&mut self) {
         *self = Cpu::new();
     }
 
