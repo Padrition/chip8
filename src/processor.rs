@@ -42,7 +42,7 @@ pub struct Cpu {
 
 impl Cpu {
     pub fn new() -> Cpu {
-        Cpu {
+        let mut cpu = Cpu {
             memory: [0;RAM],
             register: [0; 16],
             program_counter: PROGRAM_START,
@@ -54,7 +54,9 @@ impl Cpu {
             pixels: [[0; WIDTH]; HEIGHT],
             keypad: [false; 16],
             last_tick: std::time::Instant::now(),
-        }
+        };
+        cpu.memory[..CHIP8_FONT.len()].clone_from_slice(&CHIP8_FONT);
+        cpu
     }
 
     pub fn check_sound_timer(&self) -> u8 {
@@ -62,9 +64,6 @@ impl Cpu {
     }
 
     pub fn load_rom(&mut self, rom: &Cartridge) {
-        self.memory = [0;RAM];
-        self.memory[..CHIP8_FONT.len()].clone_from_slice(&CHIP8_FONT);
-
         let end = PROGRAM_START + rom.rom.len();
         self.memory[PROGRAM_START..end].clone_from_slice(rom.rom.as_slice());
     }
@@ -86,6 +85,10 @@ impl Cpu {
         for (key, state) in key_map.iter().enumerate() {
             self.keypad[key] = *state;
         }
+    }
+
+    pub fn reset(&mut self){
+        *self = Cpu::new();
     }
 
     fn program_counter_decrease(&mut self) {
