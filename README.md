@@ -1,5 +1,6 @@
 # CHIP-8 RUST EMULATOR 
 Yet another CHIP-8 emulator written in RUST programming language.
+
 [![License: WTFPL](https://img.shields.io/badge/License-WTFPL-brightgreen.svg)](http://www.wtfpl.net/about/)
 
 
