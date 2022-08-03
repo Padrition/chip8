@@ -5,7 +5,8 @@ Yet another CHIP-8 emulator written in RUST programming language.
 
 
 ## Installation
-For now you can only compile it yourself using [Rust compiler](https://www.rust-lang.org/learn/get-started).
+### Compiling from source code
+You can compile the source code by yourself using [Rust compiler](https://www.rust-lang.org/learn/get-started).
 
 Clone this repository.
 ```git
@@ -23,6 +24,14 @@ cargo run
 ```
 
 Emulator should compile and start.
+
+### Precompiled binaries
+You could [download released precompiled version](https://github.com/Padrition/chip8/releases) of the emulator.
+
+Then simply unarchive it and run it.
+
+*Note that it will work only on Linux-x86*
+
 
 ## Adding games to play
 I added some games and a programm to play around with into /assets directory.
