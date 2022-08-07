@@ -51,17 +51,23 @@ impl GameGraphics {
 
     pub fn draw_ui(&mut self, args: &RenderArgs, glyph: &mut GlyphCache, cartridge: &Cartridge) {
         if self.draw {
-            let x_choose = self.center_text_x(CHOOSE_GAME);
-            let y_choose = self.text_y(1);
-            let rec_len = self.text_len_in_pixels(CHOOSE_GAME) + 2.0 * SIZE_SCALLER as f64;
-            let rec_x = self.center_text_x(CHOOSE_GAME) - 2.0 * SIZE_SCALLER as f64;
-            let rec_y = self.text_y(2) - (FONT_SIZE + SIZE_SCALLER) as f64;
+            let mid_x = (WIDTH * SIZE_SCALLER as usize) as f64 / 2.0;
+            let half_title = (CHOOSE_GAME.chars().count() as f64 / 2.0) * FONT_SIZE as f64;
+            let title_x = mid_x - half_title;
+            let title_y = (FONT_SIZE + SIZE_SCALLER) as f64;
+            let rec_width = 50.0;
+            let rec_len = 320.0;
+            let rec_y = 130.0;
+            let rec_x =  mid_x - (rec_len / 2.0);
             let rec_with_border = Rectangle::new_round_border(WHITE, 10.0, 1.0);
+            let left_arrow_x = mid_x - (rec_len / 2.0) - (2 * FONT_SIZE) as f64;
+            let left_arrow_y = rec_y + rec_width;
+            let right_arrow_x = mid_x + (rec_len / 2.0) + FONT_SIZE as f64;
+            let right_arrow_y = left_arrow_y;
             let rom_name = cartridge.get_game_name();
-            let rom_x = self.center_text_x(rom_name);
-            let rom_y = self.text_y(2);
-            let left_arrow_x = rec_x - FONT_SIZE as f64;
-            let right_arrow_x = rec_x + rec_len;
+            let half_name = (rom_name.chars().count() as f64 / 2.0) * FONT_SIZE_SMALL as f64;
+            let rom_x = mid_x - half_name;
+            let rom_y = left_arrow_y;
             self.gl.draw(args.viewport(), |c, gl| {
                 clear(BLACK, gl);
                 text(
@@ -69,12 +75,12 @@ impl GameGraphics {
                     FONT_SIZE,
                     CHOOSE_GAME,
                     glyph,
-                    c.transform.trans(x_choose, y_choose),
+                    c.transform.trans(title_x, title_y),
                     gl,
                 )
                 .unwrap();
                 rec_with_border.draw(
-                    [rec_x, rec_y, rec_len, 50.0],
+                    [rec_x, rec_y, rec_len, rec_width],
                     &DrawState::default(),
                     c.transform,
                     gl,
@@ -93,7 +99,7 @@ impl GameGraphics {
                     FONT_SIZE,
                     "<",
                     glyph,
-                    c.transform.trans(left_arrow_x, rom_y),
+                    c.transform.trans(left_arrow_x, left_arrow_y),
                     gl,
                 )
                 .unwrap();
@@ -102,26 +108,11 @@ impl GameGraphics {
                     FONT_SIZE,
                     ">",
                     glyph,
-                    c.transform.trans(right_arrow_x, rom_y),
+                    c.transform.trans(right_arrow_x, right_arrow_y),
                     gl,
                 )
                 .unwrap();
             });
         }
-    }
-
-    fn center_text_x(&self, text: &str) -> math::Scalar {
-        let screen_width = WIDTH * SIZE_SCALLER as usize;
-        let text_len = self.text_len_in_pixels(text);
-        let x_pos = (screen_width as f64 / 2.0) - (text_len as f64 / 2.0);
-        x_pos
-    }
-
-    fn text_len_in_pixels(&self, text: &str) -> f64 {
-        text.len() as f64 * FONT_SIZE as f64
-    }
-
-    fn text_y(&self, n: usize) -> math::Scalar {
-        ((HEIGHT * SIZE_SCALLER as usize) / 3 * n) as f64
     }
 }
