@@ -99,7 +99,7 @@ fn main() {
             }
 
             EmulatorState::InGame => {
-                if last_tick.elapsed() >= Duration::from_micros(EMULATOR_RATE) {
+                if last_tick.elapsed() >= Duration::from_nanos(EMULATOR_RATE) {
                     cpu.load_key_map(keypad.map_keys());
 
                     cpu.run_next_instruction();
