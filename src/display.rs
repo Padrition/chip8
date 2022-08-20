@@ -1,8 +1,6 @@
 use crate::cartridge_reader::*;
 use crate::processor::Cpu;
-use crate::HEIGHT;
 use crate::SIZE_SCALLER;
-use crate::WIDTH;
 use graphics::*;
 use opengl_graphics::{GlGraphics, GlyphCache, OpenGL};
 use piston::input::RenderArgs;
@@ -51,22 +49,20 @@ impl GameGraphics {
 
     pub fn draw_ui(&mut self, args: &RenderArgs, glyph: &mut GlyphCache, cartridge: &Cartridge) {
         if self.draw {
-            let mid_x = (WIDTH * SIZE_SCALLER as usize) as f64 / 2.0;
-            let half_title = (CHOOSE_GAME.chars().count() as f64 / 2.0) * FONT_SIZE as f64;
-            let title_x = mid_x - half_title;
-            let title_y = (FONT_SIZE + SIZE_SCALLER) as f64;
+            let title_x = 144.0;
+            let title_y = 50.0;
             let rec_width = 50.0;
             let rec_len = 320.0;
             let rec_y = 130.0;
-            let rec_x =  mid_x - (rec_len / 2.0);
+            let rec_x =  160.0;
             let rec_with_border = Rectangle::new_round_border(WHITE, 10.0, 1.0);
-            let left_arrow_x = mid_x - (rec_len / 2.0) - (2 * FONT_SIZE) as f64;
-            let left_arrow_y = rec_y + rec_width;
-            let right_arrow_x = mid_x + (rec_len / 2.0) + FONT_SIZE as f64;
+            let left_arrow_x = 96.0;
+            let left_arrow_y = 180.0;
+            let right_arrow_x = 512.0;
             let right_arrow_y = left_arrow_y;
             let rom_name = cartridge.get_game_name();
             let half_name = (rom_name.chars().count() as f64 / 2.0) * FONT_SIZE_SMALL as f64;
-            let rom_x = mid_x - half_name;
+            let rom_x = 320.0 - half_name;
             let rom_y = left_arrow_y;
             self.gl.draw(args.viewport(), |c, gl| {
                 clear(BLACK, gl);

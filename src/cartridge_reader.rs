@@ -38,9 +38,9 @@ impl Cartridge {
         self.rom = buffer;
     }
     pub fn get_game_name(&self) -> &str {
-        let game = self.choosen_game.as_str();
-        let game = game.trim_end_matches(".ch8");
-        let game = game.trim_start_matches("assets/");
+        let mut game = self.choosen_game.as_str();
+        game = game.trim_end_matches(".ch8");
+        game = game.trim_start_matches("assets/");
         game
     }
     pub fn next_game(&mut self) {
